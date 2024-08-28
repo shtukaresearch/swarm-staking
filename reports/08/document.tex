@@ -1,0 +1,135 @@
+
+\maketitle
+%\thispagestyle{fancy}
+\section*{Overview}
+
+
+\subsection*{Scope}
+
+We studied an idealized model of the Swarm staking system as defined in the mainnet Gnosis Chain deployment, particularly the \emph{redistribution} and \emph{stake registry} contracts, in the following deployments:
+
+\begin{itemize}
+\item Reward redistribution. 
+
+{\small\url{https://gnosisscan.io/address/0x1F9a1FDe5c6350E949C5E4aa163B4c97011199B4}}
+\item Stake registry. 
+
+{\small\url{https://gnosisscan.io/address/0x781c6D1f0eaE6F1Da1F604c6cDCcdB8B76428ba7}}
+\end{itemize}
+
+Planned or proposed adjustments to the stake registry were not taken into consideration. In particular, the changes to the staking game proposed in SWIPs 19\footnote{\url{https://github.com/ethersphere/SWIPs/pull/48}} and 20\footnote{\url{https://github.com/ethersphere/SWIPs/pull/49}}, which are expected to land along with the release of Version 2.2 of the Bee client,\footnote{\url{https://blog.ethswarm.org/foundation/2024/swarm-community-call-25-july-recap/}} were out of scope for this month's work.
+
+\section*{Operations management}
+
+\subsection*{Milestones}
+
+\paragraph{Completed}
+\begin{itemize}
+  \item Develop deterministic equilibrium model of current staking system, with some simplifications, as a dynamic programming problem.
+  \item Exhibit a class of Nash equilibria where no further stake is added and no new players enter the market after a finite time.
+  \item List assumptions of current model and strategies to lift them for a fully featured model.
+  \item Pull data of historic staking behaviour and create visualisations.
+  \item Set milestones and schedule for remaining activities.
+  \end{itemize}
+
+\paragraph{Future}
+
+\subsection*{Schedule}
+
+\paragraph{September} Numerical solution of Bellman equation for $n$-step strategies. Introduce gate, cost-of-capital, and time lag effects. Reintroduce randomness and study variance and risk of ruin. Finalise objectives of staking system.
+
+\paragraph{October} Consider alternative state transition functions: withdrawable stake, expiring stake.
+
+\paragraph{November} Compile formal LaTeX report. Write SWIP[s] if alternative proposals are to be accepted.
+
+\paragraph{December} \emph{fin}
+
+\newpage
+\section*{Findings}
+
+
+\subsection*{Summary}
+
+\begin{itemize}
+  \item Develop deterministic equilibrium model of current staking system, with some simplifications, as a dynamic programming problem.
+  \item Exhibit a class of Nash equilibria where no further stake is added and no new players enter the market after a finite time.
+  \item List assumptions of current model and strategies to lift them for a fully featured model.
+\end{itemize}
+
+\subsection*{Objectives of the staking system}
+
+We came up with the following candidate objectives for the staking system:
+
+\begin{enumerate}
+  \item \emph{Sybil resistance.} Nodes should not be able to increase their revenue at close to zero cost. (Note that the Swarm storage proofs do not guarantee that distinct nodes in the same neighbourhood don't deduplicate their storage backend, so a rewards system based on number of nodes running in a neighbourhood would not be Sybil resistant.)
+  \item \emph{Penalizing liveness faults.} Nodes that fail to report storage proofs for the ``correct'' set of chunks for their neighbourhood should be penalized by having their stake slashed and hence their authorization to participate in redistribution revoked.
+  \item \emph{Low returns to scale.} The marginal payoff achievable by additional investment should not be much greater for established nodes with a large stake than for smaller nodes with less or no stake. That is, the staking market should not be susceptible to monopolistic or oligopolistic market structure.
+
+  Low returns to scale can be broken up into a few sub-problems:
+  \begin{enumerate}
+    \item \emph{Low cost of entry.} It should be cost-effective for new players to enter the market, provided they have some competitive edge.
+    \item \emph{Low variance of rewards.} The risk of ruin should not be substantially greater for small players than for large players.
+  \end{enumerate}
+\end{enumerate}
+
+Under the model established above, even players with zero cost of capital cannot enter a "mature" neighbourhood! So the "cost of entry" criterion is trivially failed. Under what conditions could new stakers enter the neighbourhood?
+
+\subsection*{The model}
+
+We introduce a model in which each staking node maintains BZZ-denominated balances of \emph{cash} $C$ and \emph{collateral} $S$ that are updated once per epoch (152 Gnosis Chain blocks, or around 12'40''). At each time step, a node may:
+
+\begin{itemize}
+\item Move an amount $x$ from cash to collateral;
+\item ``Cash out'' an amount $y$ as a dividend.
+\end{itemize}
+
+Moreover, at each time step a node receives a share $R\cdot w(\vec{S})$ of the network revenue $R$, with weight $w(\vec{S})$ depending on the vector of all nodes' collateral balances for that round. For now, we assume that collateral cannot be withdrawn.\footnote{Although this will soon change in a new version of the Swarm protocol.}
+
+The operator's utility function is a discounted sum of future dividends, i.e.
+\[
+  \mathbb{V}_i(\vec{s}) = \sum_{t\in\mathbb{N}}(1-r)^t y_{t,i}(\vec{s})
+\]
+where $y_{t,i}(\vec{s})$ is the dividend taken out by player $i$ at epoch $t$ in strategy profile $\vec{s}$. Assuming the strategy is \emph{budget-balanced,}\footnote{In a deterministic model with perfect information, this is always a reasonable assumption.} so that each player deploys all their available cash in each epoch, a strategy profile is thus defined by the sequence $(x_T)_{T\in\mathbb{N}}$ of stake top-ups for each player (satisfying $0\leq x_t\leq C_t(\vec{s})$).
+
+\subsubsection*{Dynamic programming formulation}
+
+Denote by $\mathcal{X} = [0,\infty)^{2\times I}$ the \emph{state space} that tracks everyone's cash and collateral balances, and by $F(\vec{x}):\mathcal{X}\rightarrow\mathcal{X}$ the \emph{state transition function} that updates the state with everyone's reinvestment and revenue in each epoch. Then the \emph{Bellman equation} for node $i$'s decision problem is
+%
+\begin{equation}
+  \mathbb{V}_i(\vec{s},\phi) = y_{0,i}(\vec{s}) + 
+    (1-r)\cdot\mathbb{V}_i(T^{-1}\vec{s}, F(\vec{x}_0)\phi)
+\end{equation}
+%
+where $T^{-1}$ is the time shift operator defined by $(T^{-1}x)_n = x_{n+1}$. This recursive equation can be used to approximate optimal strategies consisting of increasing numbers of nontrivial moves.
+
+\subsubsection*{Nash equilibria in perfect information}
+
+In what follows, we restrict attention to a single neighbourhood $\nu$, assume the revenue $R_\nu$ to that neighbourhood is constant, and work in a model of perfect information (so each player knows what the other players' strategies are). Then if we write $\vec{S}$ for the vector of initial stakes, then all nodes following the *passive staker* strategy $x_{T,i}=0$ for all $T, i$ is a Nash equilibrium as long as
+%
+\begin{equation} \label{passive-threshold}
+S_i \geq \sqrt{(R_\nu/r)\sum_{\nu\setminus i}\vec{S}} - \sum_{\nu\setminus i}\vec{S}
+\end{equation}
+%
+for each node $i\in \nu$. In particular this is true if $\sum_{\nu}\vec{S}\geq R_\nu/r$, that is, the total stake in the neighbourhood exceeds the discounted sum of future revenue to the neighbourhood.
+
+It follows that it is never profitable for a new player to enter the neighbourhood once the stake reaches this threshold. This may change if the neighbourhood revenue increases, but inequality \eqref{passive-threshold} means that the player best placed to profit from such a change is one that already had the most stake in the neighbourhood before the change.
+
+Via a more involved calculation along the same lines, by studying the \emph{impulse response functions} $\frac{\partial W_{i,t+k}}{\partial x_{i,t}}$, measuring the change in market share in epoch $t+k$ resulting from a stake top-up in epoch $t$, 
+%
+we were able to show that there are no Nash equilibria with unbounded stake top-ups. This answers a question posed in the original SoW in the negative.
+
+\subsubsection*{Returns to scale}
+
+By studying the impulse response functions, we found that the reward system actually has \emph{negative} returns to scale: the values $\frac{\partial W_{T,i}}{\partial x_{t,i}}$ are smaller for players $i$ with more stake in the neighbourhood. More precisely, they are monotonically related to the amount of stake in the complement $\nu\setminus\{i\}$.
+
+\begin{comment}
+\subsection*{Introducing operational cost}
+
+If a node $i$ runs an operational cost of $O_i$ per epoch, the payoff function gains a term $-\sum_{t\in\mathbb{N}} (1-r)^t O_i$. Except for constraining the available cash, this term does not depend on $\vec{x}$, so the conclusions of the previous section remain unchanged.
+
+If, on the other hand, we incorporate a *cost of capital* $\epsilon>0$, inducing a per-epoch payment $\epsilon x_{0,i}$ needed to finance the initial investment $x_{0,i}$, then the result does depend on $\vec{x}$. We end up with the following modification of \ref{passive-threshold}:
+$$
+S_i \geq \sqrt{(R_\nu/r+\epsilon)\sum_{\nu\setminus i}\vec{S}} - \sum_{\nu\setminus i}\vec{S}
+$$
+It is still the case that no new stake enters the neighbourhood after the threshold $\sum_\nu \vec{S} \geq R_\nu/r$ is passed.
+\end{comment}
