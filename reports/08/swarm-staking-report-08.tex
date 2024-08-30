@@ -19,7 +19,10 @@
 \usepackage{titling}
 \setlength{\droptitle}{-10ex}
 \pretitle{\noindent\huge\scshape\bfseries\color{darkgray}}
-\posttitle{\par}
+\posttitle{\hfill%
+\parbox[b]{.2\textwidth}{%
+\hfill\includegraphics[height=5ex]{C:/Dropbox/shtuka/media/logo/olavi/classic-1-square-without-text}\vspace{-3.7ex}%
+}\par}
 \preauthor{\vspace{1ex}\par\raggedright \Large}
 \postauthor{\par}
 \predate{\vspace{2ex}\noindent\textit}
@@ -33,7 +36,7 @@
 \pagestyle{fancy}
 
 \fancyhead[L]{Swarm staking analysis: August 2024}
-\fancyhead[R]{\scshape SHTUKA \textbackslash\ research}
+\fancyhead[R]{\scshape Shtuka Research}
 \fancyfoot[L,C]{}
 \fancyfoot[R]{\thepage}
 \setlength{\headheight}{4ex}
@@ -49,6 +52,7 @@
 %%% HYPERLINKS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \usepackage[colorlinks=true,
+                urlcolor=olive,
                 linkcolor=teal,
                 citecolor=olive,
                 destlabel=true,
@@ -68,7 +72,7 @@
 \input{macro}
 
 \author{Swarm staking analysis: August report}
-\title{SHTUKA \textbackslash\ research}
+\title{Shtuka research}
 \begin{document}
 \input{document}
 \end{document}
