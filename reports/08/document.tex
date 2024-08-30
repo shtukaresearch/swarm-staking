@@ -1,12 +1,24 @@
-
 \maketitle
 %\thispagestyle{fancy}
 \section*{Overview}
 
+\subsection*{Goals}
+
+Our goals for this month were to formulate objectives for the design of the Swarm ``staking'' and redistribution mechanism and establish an initial mathematical model for the Swarm staking game within a fixed neighbourhood. 
+%
+These outputs establish a framework for the more realistic data-driven or simulation based studies we will pursue for the rest of the project.
+
+\subsection*{Methodology}
+
+For designing and evaluating the model, we used a pen-and-paper pure mathematical approach based on discrete time games of perfect information and dynamic programming.
+%
+We searched for feasibility regions and best responses in closed form, and used these to establish subgame-perfect Nash equilibria.
+
+In subsequent months, the results derived for these deterministic models can be adapted to results for stochastic versions of the same model that hold in expectation.
 
 \subsection*{Scope}
 
-We studied an idealized model of the Swarm staking system as defined in the mainnet Gnosis Chain deployment, particularly the \emph{redistribution} and \emph{stake registry} contracts, in the following deployments:
+We studied an idealised model of the Swarm staking system as defined in the mainnet Gnosis Chain deployment, particularly the \emph{redistribution} and \emph{stake registry} contracts:
 
 \begin{itemize}
 \item Reward redistribution. 
@@ -21,24 +33,42 @@ Planned or proposed adjustments to the stake registry were not taken into consid
 
 \section*{Operations management}
 
-\subsection*{Milestones}
+\subsection*{Completed Milestones}
 
-\paragraph{Completed}
+%\paragraph{Completed}
 \begin{itemize}
-  \item Develop deterministic equilibrium model of current staking system, with some simplifications, as a dynamic programming problem.
-  \item Exhibit a class of Nash equilibria where no further stake is added and no new players enter the market after a finite time.
+  \item Develop candidate list of quantitative objectives for the Swarm staking system.
+  \item Develop deterministic, perfect information model that captures core aspects of the current staking system. Express the decision problem as a dynamic programming problem.
+  \item Show that, contrary to a conjecture posed in the SoW (Milestone 2.), in perfect information there are no Nash equilibria in which stake is topped up without bound.
+  \item Interpret these results in the context of the candidate list of quantitative objectives.
   \item List assumptions of current model and strategies to lift them for a fully featured model.
-  \item Pull data of historic staking behaviour and create visualisations.
   \item Set milestones and schedule for remaining activities.
   \end{itemize}
 
-\paragraph{Future}
+\subsection*{Future milestones}
+\begin{itemize}
+  \item Get feedback on the objectives we proposed for the staking system with the Swarm Foundation and, after revisions if necessary, come to a consensus.
+  \item Study staker decision processes without the assumptions of determinism, complete information, or stationarity.
+  \item Pull data on historic staker behaviour and analyse it in the context of our model. Are there any stakers that already exhibit strategic behaviour? Create visualisations.
+  \item Describe and evaluate modifications of the current staking system in terms of the established model. Consider changes to the state transition function where collateral may be withdrawn either by the owner or by the ``system'' as a kind of tax.
+  \item Establish conditions for market clearing at the target replication rate.
+  \item Identify aggregate economic indicators and metrics relevant for monitoring and forecasting Swarm storage performance.
+\end{itemize}
 
 \subsection*{Schedule}
 
-\paragraph{September} Numerical solution of Bellman equation for $n$-step strategies. Introduce gate, cost-of-capital, and time lag effects. Reintroduce randomness and study variance and risk of ruin. Finalise objectives of staking system.
+\paragraph{September} Develop stochastic model and study variance and risk of ruin. 
+%
+Numerical solution of Bellman equation for $n$-step strategies in the stochastic setting. 
+%
+Introduce gate, cost-of-capital, and time lag effects. 
+%
+Finalise objectives of staking system.
 
-\paragraph{October} Consider alternative state transition functions: withdrawable stake, expiring stake.
+\paragraph{October} 
+Consider alternative state transition functions: withdrawable stake, expiring stake.
+%
+Study aggregate economic indicators and price discovery.
 
 \paragraph{November} Compile formal LaTeX report. Write SWIP[s] if alternative proposals are to be accepted.
 
@@ -51,9 +81,15 @@ Planned or proposed adjustments to the stake registry were not taken into consid
 \subsection*{Summary}
 
 \begin{itemize}
-  \item Develop deterministic equilibrium model of current staking system, with some simplifications, as a dynamic programming problem.
-  \item Exhibit a class of Nash equilibria where no further stake is added and no new players enter the market after a finite time.
-  \item List assumptions of current model and strategies to lift them for a fully featured model.
+  \item We found a single-currency, infinite time horizon incentive model for the staking system with optimal substructure.
+  %
+  Assuming balanced budgets, a strategy consists of the data of an amount to reinvest in the stake registry at each epoch.
+
+  \item Contrary to a conjecture put forth in the SoW, in our model there are no Nash equilibria where stake increases without bound.
+  %
+  The reinvestment opportunity saturates when the stake in the neighbourhood exceeds the discounted sum of future revenue.
+  %
+  \item The staking system exhibits \emph{negative} returns to scale: the marginal returns to reinvestment are higher for new entrants than for large stakeholders, and the reinvestment opportunity saturates sooner for the latter than for the former.
 \end{itemize}
 
 \subsection*{Objectives of the staking system}
@@ -62,17 +98,22 @@ We came up with the following candidate objectives for the staking system:
 
 \begin{enumerate}
   \item \emph{Sybil resistance.} Nodes should not be able to increase their revenue at close to zero cost. (Note that the Swarm storage proofs do not guarantee that distinct nodes in the same neighbourhood don't deduplicate their storage backend, so a rewards system based on number of nodes running in a neighbourhood would not be Sybil resistant.)
-  \item \emph{Penalizing liveness faults.} Nodes that fail to report storage proofs for the ``correct'' set of chunks for their neighbourhood should be penalized by having their stake slashed and hence their authorization to participate in redistribution revoked.
-  \item \emph{Low returns to scale.} The marginal payoff achievable by additional investment should not be much greater for established nodes with a large stake than for smaller nodes with less or no stake. That is, the staking market should not be susceptible to monopolistic or oligopolistic market structure.
+  \item \emph{Penalising liveness faults.} Nodes that fail to report storage proofs for the ``correct'' set of chunks for their neighbourhood should be penalised by having their stake slashed and hence their authorisation to participate in redistribution revoked.
+  \item \emph{Low returns to operator scale.} The marginal payoff achievable by additional investment should not be much greater for established nodes with a large stake than for smaller nodes with less or no stake. That is, the staking market should not be susceptible to monopolistic or oligopolistic market structure.
 
   Low returns to scale can be broken up into a few sub-problems:
   \begin{enumerate}
     \item \emph{Low cost of entry.} It should be cost-effective for new players to enter the market, provided they have some competitive edge.
     \item \emph{Low variance of rewards.} The risk of ruin should not be substantially greater for small players than for large players.
   \end{enumerate}
-\end{enumerate}
+  \item \emph{Create or accentuate demand pressure for BZZ token.} All transactions in Swarm are currently denominated in the BZZ token. In order for the mechanism to create real incentives for storage providers, the BZZ token must therefore hold real value. 
+  %
+  Moreover, since the Swarm Foundation raised money from investors in a BZZ token sale, there is also a motivation for the token to \emph{accrue} value so that investors can get a return.
 
-Under the model established above, even players with zero cost of capital cannot enter a "mature" neighbourhood! So the "cost of entry" criterion is trivially failed. Under what conditions could new stakers enter the neighbourhood?
+  The staking system and the yield it generates is a fundamental source of demand for BZZ tokens that comes from service providers whose incentives ought to be aligned with those of the Swarm project itself.
+  %
+  Thus, the ability for the staking system to generate consistent demand for BZZ tokens at scale is important for the success of the BZZ token.
+\end{enumerate}
 
 \subsection*{The model}
 
@@ -104,15 +145,19 @@ where $T^{-1}$ is the time shift operator defined by $(T^{-1}x)_n = x_{n+1}$. Th
 
 \subsubsection*{Nash equilibria in perfect information}
 
-In what follows, we restrict attention to a single neighbourhood $\nu$, assume the revenue $R_\nu$ to that neighbourhood is constant, and work in a model of perfect information (so each player knows what the other players' strategies are). Then if we write $\vec{S}$ for the vector of initial stakes, then all nodes following the *passive staker* strategy $x_{T,i}=0$ for all $T, i$ is a Nash equilibrium as long as
+In what follows, we restrict attention to a single neighbourhood $\nu$, assume the revenue $R_\nu$ to that neighbourhood is constant, and work in a model of perfect information (so each player knows what the other players' strategies are). Then if we write $\vec{S}$ for the vector of initial stakes, then all nodes following the \emph{passive staker} strategy $x_{T,i}=0$ for all $T, i$ is a Nash equilibrium as long as
 %
 \begin{equation} \label{passive-threshold}
-S_i \geq \sqrt{(R_\nu/r)\sum_{\nu\setminus i}\vec{S}} - \sum_{\nu\setminus i}\vec{S}
+ (R_\nu/r)\sum_{\nu\setminus i}\vec{S} \leq \left(\sum_{\nu}\vec{S} \right)^2
 \end{equation}
 %
-for each node $i\in \nu$. In particular this is true if $\sum_{\nu}\vec{S}\geq R_\nu/r$, that is, the total stake in the neighbourhood exceeds the discounted sum of future revenue to the neighbourhood.
+for each node $i\in \nu$. 
+%
+Note that this condition is more quickly satisfied if $i$ holds a larger share of the stake in $\nu$, that is, larger stakers have a lower threshold beyond which reinvestment is not profitable.
 
-It follows that it is never profitable for a new player to enter the neighbourhood once the stake reaches this threshold. This may change if the neighbourhood revenue increases, but inequality \eqref{passive-threshold} means that the player best placed to profit from such a change is one that already had the most stake in the neighbourhood before the change.
+In particular \eqref{passive-threshold} holds true if $\sum_{\nu}\vec{S}\geq R_\nu/r$, that is, the total stake in the neighbourhood exceeds the discounted sum of future revenue to the neighbourhood.
+%
+It follows that it is never profitable for a new player to enter the neighbourhood once the stake reaches this point.
 
 Via a more involved calculation along the same lines, by studying the \emph{impulse response functions} $\frac{\partial W_{i,t+k}}{\partial x_{i,t}}$, measuring the change in market share in epoch $t+k$ resulting from a stake top-up in epoch $t$, 
 %
@@ -121,6 +166,10 @@ we were able to show that there are no Nash equilibria with unbounded stake top-
 \subsubsection*{Returns to scale}
 
 By studying the impulse response functions, we found that the reward system actually has \emph{negative} returns to scale: the values $\frac{\partial W_{T,i}}{\partial x_{t,i}}$ are smaller for players $i$ with more stake in the neighbourhood. More precisely, they are monotonically related to the amount of stake in the complement $\nu\setminus\{i\}$.
+%
+Similarly, the reinvestment opportunity for larger stakers within a neighbourhood saturates before it does for smaller stakers or new entrants.
+%
+So in this sense, the staking system achieves the objectives of \emph{marginal returns to scale} and \emph{cost of entry}.
 
 \begin{comment}
 \subsection*{Introducing operational cost}
@@ -133,3 +182,23 @@ S_i \geq \sqrt{(R_\nu/r+\epsilon)\sum_{\nu\setminus i}\vec{S}} - \sum_{\nu\setmi
 $$
 It is still the case that no new stake enters the neighbourhood after the threshold $\sum_\nu \vec{S} \geq R_\nu/r$ is passed.
 \end{comment}
+
+\subsubsection*{Assumptions of the current model}
+
+Here are some assumptions we should lift for a fully realistic model, listed roughly in decreasing order of how much we expect lifting them to affect our conclusions:
+\begin{itemize}
+  \item Determinism: future revenue is fixed (and common knowledge). Even if \emph{expected} revenue is held constant, in the real Swarm staking game rewards are assigned each epoch via a lottery system.
+  \item Perfect information: all players know the strategies of the other players at all future steps. Perhaps a more realistic approach is to model the mechanism as a (dynamic) Bayes game of incomplete information.
+  \item Stationarity: the (expected) revenue of the target neighbourhood remains constant. In reality, expected revenue is affected by network demand, the decisions of stakers via the price oracle, and the price of competing services.
+  %
+  Similarly, operational costs depend on the costs of hardware and electricity.
+  \item We considered all costs and rewards as BZZ denominated. But operational costs and the time preference discount rate $r$ are more easily modelled in terms of fiat currency.
+  \item We didn't model any time delays between stake top-ups and reward weight updates.
+  \item We didn't model cost of capital, operational costs, or the risk of being frozen or slashed due to liveness failures.
+  \item We didn't model the \emph{gate function} 
+  \[
+    g(x) = \left\{\begin{array}{ll}0 & x\leq 10\text{ BZZ} \\ x & x \geq 10\text{ BZZ} \end{array}\right.
+  \]
+  which imposes a stake threshold beneath which a collateral account is dropped from the weighting function.
+  \item We assumed the neighbourhood count remains constant.
+\end{itemize}
