@@ -87,7 +87,7 @@ Study aggregate economic indicators and price discovery.
 
   \item Contrary to a conjecture put forth in the SoW, in our model there are no Nash equilibria where stake increases without bound.
   %
-  The reinvestment opportunity saturates when the stake in the neighbourhood exceeds the discounted sum of future revenue.
+  The (re)investment opportunity saturates when the stake in the neighbourhood exceeds the discounted sum of future revenue.
   %
   \item The staking system exhibits \emph{negative} returns to scale: the marginal returns to reinvestment are higher for new entrants than for large stakeholders, and the reinvestment opportunity saturates sooner for the latter than for the former.
 \end{itemize}
@@ -117,20 +117,24 @@ We came up with the following candidate objectives for the staking system:
 
 \subsection*{The model}
 
-We introduce a model in which each staking node maintains BZZ-denominated balances of \emph{cash} $C$ and \emph{collateral} $S$ that are updated once per epoch (152 Gnosis Chain blocks, or around 12'40''). At each time step, a node may:
+We introduce a model of a single neighbourhood $\nu$ in which each staking node maintains BZZ-denominated balances of \emph{cash} $C$ and \emph{collateral} $S$ that are updated once per epoch (152 Gnosis Chain blocks, or around 12'40''). At each time step, a node may:
 
 \begin{itemize}
 \item Move an amount $x$ from cash to collateral;
 \item ``Cash out'' an amount $y$ as a dividend.
 \end{itemize}
-
-Moreover, at each time step a node receives a share $R\cdot w(\vec{S})$ of the network revenue $R$, with weight $w(\vec{S})$ depending on the vector of all nodes' collateral balances for that round. For now, we assume that collateral cannot be withdrawn.\footnote{Although this will soon change in a new version of the Swarm protocol.}
+%
+At each time step a node receives a share $R\cdot w(\vec{S})$ of the neighbourhood revenue $R$, with weight $w(\vec{S})\in[0,1]$ being the target node's share of the total collateral in the neighbourhood for that epoch. For now, we assume that collateral cannot be withdrawn.\footnote{Although this will soon change in a new version of the Swarm protocol.}
 
 The operator's utility function is a discounted sum of future dividends, i.e.
 \[
   \mathbb{V}_i(\vec{s}) = \sum_{t\in\mathbb{N}}(1-r)^t y_{t,i}(\vec{s})
 \]
-where $y_{t,i}(\vec{s})$ is the dividend taken out by player $i$ at epoch $t$ in strategy profile $\vec{s}$. Assuming the strategy is \emph{budget-balanced,}\footnote{In a deterministic model with perfect information, this is always a reasonable assumption.} so that each player deploys all their available cash in each epoch, a strategy profile is thus defined by the sequence $(x_T)_{T\in\mathbb{N}}$ of stake top-ups for each player (satisfying $0\leq x_t\leq C_t(\vec{s})$).
+where $y_{t,i}(\vec{s})$ is the dividend taken out by player $i$ at epoch $t$ in strategy profile $\vec{s}$. 
+%
+If the strategy is \emph{budget-balanced},\footnote{In a deterministic model with perfect information, this is always a reasonable assumption.} so that each player deploys all their available cash in each epoch, we have $y_t = R\cdot w_t - x_t$. 
+%
+A strategy profile is thus defined by the sequence $(x_T)_{T\in\mathbb{N}}$ of stake top-ups for each player, with feasibility constraint $0\leq x_t\leq R\cdot w_t(\vec{s})$).
 
 \subsubsection*{Dynamic programming formulation}
 
@@ -145,7 +149,7 @@ where $T^{-1}$ is the time shift operator defined by $(T^{-1}x)_n = x_{n+1}$. Th
 
 \subsubsection*{Nash equilibria in perfect information}
 
-In what follows, we restrict attention to a single neighbourhood $\nu$, assume the revenue $R_\nu$ to that neighbourhood is constant, and work in a model of perfect information (so each player knows what the other players' strategies are). Then if we write $\vec{S}$ for the vector of initial stakes, then all nodes following the \emph{passive staker} strategy $x_{T,i}=0$ for all $T, i$ is a Nash equilibrium as long as
+In what follows, we assume the revenue $R_\nu$ to the target neighbourhood is constant, and work in a model of perfect information (so each player knows what the other players' strategies are). Then if we write $\vec{S}$ for the vector of initial stakes, then all nodes following the \emph{passive staker} strategy $x_{T,i}=0$ for all $T, i$ is a subgame perfect Nash equilibrium as long as
 %
 \begin{equation} \label{passive-threshold}
  (R_\nu/r)\sum_{\nu\setminus i}\vec{S} \leq \left(\sum_{\nu}\vec{S} \right)^2
@@ -153,19 +157,19 @@ In what follows, we restrict attention to a single neighbourhood $\nu$, assume t
 %
 for each node $i\in \nu$. 
 %
-Note that this condition is more quickly satisfied if $i$ holds a larger share of the stake in $\nu$, that is, larger stakers have a lower threshold beyond which reinvestment is not profitable.
+Note that this condition is sooner satisfied if $i$ holds a larger share of the stake in $\nu$, that is, the reinvestment opportunity saturates sooner for larger shareholders.
 
 In particular \eqref{passive-threshold} holds true if $\sum_{\nu}\vec{S}\geq R_\nu/r$, that is, the total stake in the neighbourhood exceeds the discounted sum of future revenue to the neighbourhood.
 %
 It follows that it is never profitable for a new player to enter the neighbourhood once the stake reaches this point.
 
-Via a more involved calculation along the same lines, by studying the \emph{impulse response functions} $\frac{\partial W_{i,t+k}}{\partial x_{i,t}}$, measuring the change in market share in epoch $t+k$ resulting from a stake top-up in epoch $t$, 
+Via a more involved calculation along the same lines, by studying the \emph{impulse response functions} $\frac{\partial w_{i,t+k}}{\partial x_{i,t}}$, measuring the change in market share in epoch $t+k$ resulting from a stake top-up in epoch $t$, 
 %
 we were able to show that there are no Nash equilibria with unbounded stake top-ups. This answers a question posed in the original SoW in the negative.
 
 \subsubsection*{Returns to scale}
 
-By studying the impulse response functions, we found that the reward system actually has \emph{negative} returns to scale: the values $\frac{\partial W_{T,i}}{\partial x_{t,i}}$ are smaller for players $i$ with more stake in the neighbourhood. More precisely, they are monotonically related to the amount of stake in the complement $\nu\setminus\{i\}$.
+By studying the impulse response functions, we found that the reward system actually has \emph{negative} returns to scale: the marginal market share $\frac{\partial w_{T,i}}{\partial x_{t,i}}$ is smaller for players $i$ with more stake in the neighbourhood. More precisely, they are monotonically related to the amount of stake in the complement $\nu\setminus\{i\}$.
 %
 Similarly, the reinvestment opportunity for larger stakers within a neighbourhood saturates before it does for smaller stakers or new entrants.
 %
