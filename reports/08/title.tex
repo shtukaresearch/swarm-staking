@@ -1,0 +1,25 @@
+\usepackage{microtype}
+
+\makeatletter
+\renewcommand\maketitle{%
+\thispagestyle{plain}
+\noindent\hrulefill
+
+\
+
+\noindent
+\begin{minipage}{\textwidth * 2 / 3}
+ {\noindent\Huge\scshape\textls*[50]{\@author}} \\
+ \\
+ {\noindent\Large\@title}
+\end{minipage}%
+% LOGO
+\begin{minipage}{\textwidth / 3}
+  \hfill\includegraphics[height=10ex]{media/classic-1-square-without-text}
+\end{minipage}
+
+\
+
+\noindent\hrulefill
+}
+\makeatother

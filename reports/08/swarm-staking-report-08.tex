@@ -1,11 +1,12 @@
 %%% FONT + LAYOUT %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \documentclass[a4paper,12pt]{article}
 
-\usepackage{fontspec} % set font
+%\usepackage{fontspec} % set font
 %\setmainfont{Comic Sans MS}
-\setromanfont{Linux Libertine G}
-
-%\usepackage[english]{babel}   % Spacing and hyphenation rules for English.
+%\setromanfont{Linux Libertine}
+\usepackage{microtype}
+\usepackage{libertine}
+\usepackage[english]{babel}   % Spacing and hyphenation rules for English.
 %\usepackage[T1]{fontenc} % ensures that ANSI carets and mid render correctly and are searchable
 
 \usepackage[margin=25mm]{geometry}
@@ -16,28 +17,31 @@
 \usepackage{verbatim}
 
 % title
-\usepackage{titling}
-\setlength{\droptitle}{-10ex}
-\pretitle{\noindent\huge\scshape\bfseries\color{darkgray}}
-\posttitle{\hfill%
-\parbox[b]{.2\textwidth}{%
-\hfill\includegraphics[height=5ex]{C:/Dropbox/shtuka/media/logo/olavi/classic-1-square-without-text}\vspace{-3.7ex}%
-}\par}
-\preauthor{\vspace{1ex}\par\raggedright \Large}
-\postauthor{\par}
-\predate{\vspace{2ex}\noindent\textit}
-\postdate{\par\noindent\hrulefill}
+\input{title}
+
+%\usepackage{titling}
+%\setlength{\droptitle}{-10ex}
+%\pretitle{\noindent\huge\scshape\bfseries\color{darkgray}}
+%\posttitle{\hfill%
+%\parbox[b]{.2\textwidth}{%
+%\hfill\includegraphics[height=5ex]{media/classic-1-square-without-text}\vspace{-3.7ex}%
+%}\par}
+%\preauthor{\vspace{1ex}\par\raggedright \Large}
+%\postauthor{\par}
+%\predate{\vspace{2ex}\noindent\textit}
+%\postdate{\par\noindent\hrulefill}
 
 \usepackage{fancyhdr}
 \fancypagestyle{plain}{%
   \fancyhf{}
   \fancyfoot[R]{\thepage}
   \setlength{\headheight}{4ex}
+  \renewcommand\headrulewidth{0pt}
 }
 \pagestyle{fancy}
 
 \fancyhead[L]{Swarm staking analysis: August 2024}
-\fancyhead[R]{\scshape Shtuka Research}
+\fancyhead[R]{\scshape Shtuka research}
 \fancyfoot[L,C]{}
 \fancyfoot[R]{\thepage}
 \setlength{\headheight}{4ex}
@@ -68,12 +72,14 @@
 % patches hyperref to simplify processing (no .out file is generated and 
 % only needs 2 runs).
 
+\urlstyle{same}
+
 %%% MACROS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \input{macro}
 
-\author{Swarm staking analysis: August report}
-\title{Shtuka research}
+\author{Shtuka research}
+\title{Swarm staking analysis: August report}
 \begin{document}
 \input{document}
 \end{document}
