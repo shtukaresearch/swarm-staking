@@ -1,0 +1,33 @@
+%%% amsthm configuration %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usepackage{amsthm}
+
+\swapnumbers        % Theorem number precedes heading.
+
+% The following resets \end of theorem and proof environments to LaTeX
+% defaults, which suppress indentation on immediately following line.
+
+\usepackage{etoolbox}
+
+\makeatletter
+  \patchcmd{\@endtheorem}{\@endpefalse }{}{}{}
+  \patchcmd{\endproof}{\@endpefalse}{}{}{}
+\makeatother
+
+% Initialize main counter
+\newtheorem{paber@thm}{}[section]
+
+% Theorem environment definitions
+  \theoremstyle{plain}
+    \newtheorem{theorem}[paber@thm]{Theorem}
+    \newtheorem*{theorem*}{Theorem}
+    \newtheorem{lemma}[paber@thm]{Lemma}
+    \newtheorem*{lemma*}{Lemma}
+  \theoremstyle{definition}
+    \newtheorem{definition}[paber@thm]{Definition}
+    \newtheorem*{definition*}{Definition}
+  \theoremstyle{remark}
+    \newtheorem{remark}[paber@thm]{Remark}
+    \newtheorem*{remark*}{Remark}
+    \newtheorem{example}[paber@thm]{Example}
+    \newtheorem*{example*}{Example}
