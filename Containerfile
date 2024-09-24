@@ -7,3 +7,4 @@ RUN dnf install -y texlive
 # texlive-tools: verbatim, calc, 
 # texlive-graphics texlive-microtype texlive-babel
 RUN dnf install -y texlive-libertine
+RUN luaotfload-tool --update
