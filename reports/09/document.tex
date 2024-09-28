@@ -1,345 +1,305 @@
 \maketitle
 %\thispagestyle{fancy}
-\section{Introduction}
+\section*{Overview}
 
-This is the full report.
+\subsection*{Goals}
 
+Our goals for this month were as follows: 
 
-\subsection{Swarm mechanism}
-
-The Swarm mechanism is defined in \cite{book-of-swarm}.
-
-In our study, we focus only on the procurement auction side of the mechanism, which governs the relationship between storage providers and the Swarm system.
-%
-The demand-side part of the relationship, governing the relationship between storage clients and the Swarm system, is out of scope.
-
-\section{Model description}
-
-\subsection{Addresses}
-
-The set of agents is denoted $\Overlay$.
-%
-It can be realised as a set of \emph{overlay addresses}, for example, $\Overlay \cong \mathbb{F}_2^{256}$.
-
-The set of overlay addresses is divided into a set $\Bins$ of \emph{bins}.
-%
-In \cite{book-of-swarm}, these are also called \emph{neighbourhoods}; we prefer the term `bins' because neighbourhoods can also be of various different sizes.
-%
-We are given a surjective map $\bin:\Overlay\rightarrow\Bins$ that takes an overlay address to the bin to which it belongs.
-%
-The fibre of $\bin$ over a bin $\nu\in\Bins$ is denoted $\Overlay_\nu$.
-
-In deployments, we have $\Bins\cong \mathbb{F}_2^D$ and the function $\bin$ is projection on the first $D$ bits, where $D$ is a network-wide dynamic variable called the \emph{network (log-)radius}.
-%
-For any $\nu\in\Bins$, we can then identify $\Overlay_\nu\simeq\mathbb{F}_2^{256-D}$ by projecting out the first $D$ bits.
-
-
-\subsection{Balances}
 \begin{itemize}
   \item 
-    Write $\uR := [0,\infty)$. Except when otherwise indicated, we consider it equipped with Lebesgue measure.
-
-  \item
-    Each agent is considered to run three accounts: cash, dividend, and collateral (i.e.~stake).
+    Begin formalising game-theoretic arguments sketched last month in a stochastic setting.
     %
-    The state space for each agent is therefore $\simeq\uR^3$.
-    %
-    Of these, only the collateral is explicitly registered in a Swarm contract, the stake registry; cash and dividend balances are an abstraction (though they may correspond roughly to the balance of an Ethereum address associated to the overlay address and the total outflows from that address to targets other than the Swarm stake registry, respectively).
-
+    Incorporate details such as operating cost, amortised capex, and the stake threshold.
   \item
-    The \emph{network revenue} at time $t$ is denoted $R_t\in \uR$.
-    %
-    The sequence $\{R_t\}_{t\in\N}$ is a random process.
-
+    Introduce parametrised generalisations of the model and hence contextualise SWIPs 19 and 20 in a broader framework.
+  \item 
+    Consider risk models and their dependence on operator scale.
   \item
-
+    Revise and expand our formulation of the NO incentive system design objectives.
 \end{itemize}
 
+\subsection*{Methodology}
 
-
-\subsection{Storage service}
-
-In order to receive rewards, node operators (NOs) must provide a \emph{storage service} to the network.
+For evaluating risk associated with the redistribution lottery, we used a random walks approach together with the standard actuarial measures value-at-risk and ruin probability.
 %
-The primary objective of the incentive system on the supply side is to ensure that this storage service is provided to a satisfactory standard.
+We also developed a Python notebook to analyse risk models at different scales and compute these metrics. The notebook is available at the GitHub repo for this project.\footnote{\url{https://github.com/shtukaresearch/swarm-staking/blob/main/notebooks/risk-model.ipynb}}
 
-For the purpose of this report, we assume that the Swarm protocol is able to detect whether or not the storage service is provided and that payouts are contingent on this.
+We approached the parametrised generalisation of the incentive model by direct inspection of the action spaces and state transition functions to see where parameters and binary design choices can be introduced, especially where these admit interpretations in traditional financial terms. 
 %
-It follows that during each epoch, each NO may choose between providing the service or not providing it; there are no third options where the system can be `fooled' into paying out a reward where there is no service.
+Parameters were chosen to be able to describe changes proposed in SWIPs 19 and 20.
 
-We also assume that each NO operates at most one node.
-%
-Hence, we do not consider the deduplication attack.
 
-The \emph{operating cost} of an agent $a\in\Overlay$ at time $t$ is denoted $O_{a,t}\in\uR$.
+\subsection*{Scope}
+
+The scope of this month's work is the node operator incentive system, which includes the rules surrounding the stake registry and redistribution mechanism. 
 %
-In practice, the operating cost of an agent comprises \emph{fixed} and \emph{variable} costs:
+We introduce the storage unit price oracle and treat it as a black box.
+
+We started to consider parameters that can be introduced to generalise the model.
+%
+In particular, we considered how to incorporate two proposed adjustments to the stake registry: SWIPs 19\footnote{\url{https://github.com/ethersphere/SWIPs/pull/48}} and 20\footnote{\url{https://github.com/ethersphere/SWIPs/pull/49}}, which are were implemented in Version 2.2 of the Bee client, released this month.\footnote{\url{https://github.com/ethersphere/bee/releases/tag/v2.2.0}}
+
+\section*{Operations management}
+
+\subsection*{Completed Milestones}
+
+%\paragraph{Completed}
 \begin{itemize}
   \item 
-    Fixed costs are costs that persist regardless of whether the agent provides the storage service.
-    %
-    Examples of fixed costs include rent, wages of full-time employees, and financing debt.
-
-  \item
-    Variable costs are costs only incurred when actually providing the service.
-    %
-    Examples include electricity and bandwidth.
-\end{itemize}
-
-The division into fixed and variable costs, although typical in business operations management, is an over-simplification.
-%
-\begin{enumerate}
+    Expand on candidate list of quantitative objectives for the Swarm staking system.
   \item 
-    If the service is stopped temporarily, depending on the scale of the stoppage, some costs could occur as variable or fixed.
+    Develop stochastic perfect information model that captures core aspects of the current staking system. 
     %
-    For example, it may or may not be possible to lay off employees and then rehire when resuming service.
+    Use solutions to the deterministic model to back out results that hold in expectation.
 
-  \item
-    Starting the service after a stoppage, or for the first time, may incur a startup cost.
-    %
-    This can be amortised and absorbed into the opex cost process.
-\end{enumerate}
+  \item Study staker decision processes without the assumptions of determinism.
+  \end{itemize}
 
-\subsection{Weighting functions}
-
-\begin{definition}
-
-  A \emph{weighting function} on a stake registry $\uR^N\setminus\{0\}$ is a measurable function $w:\uR^N\rightarrow[0,1]^N$ such that $\sum w(\vec{s}) \leq 1$ for all $\vec{s}\in \uR^N$.
-  %
-  A weighting function is \emph{complete} if in fact $\sum w(s) = 1$ for all $s\in \uR^N$.
-
-\end{definition}
-
-\begin{example}[Even weighting]
-  \emph{Even weighting} is the complete weighting function $w(s) = s/\sum s$.
-\end{example}
-
-
-\begin{example}[Adjusted shares]
-
-  Suppose given an \emph{adjustment} function $g:\uR\rightarrow\uR$. 
-  %
-  Applying it to each coordinate gives a function
-  %
-  Then the \emph{adjusted} even weighting function is defined $w(s) = g(s)/\sum g(s)$.
-
-\end{example}
-
-\begin{example}[Entry threshold]
-  For any $\tau\in\uR$, we can define a ``gate'' function by
-  \[
-    g_\tau(r) := \left\{\begin{array}{ll} 0 & r<\tau \\ r & r\geq\tau\end{array}\right.
-  \]
-\end{example}
-
-For each $i\in I$, observe that
-\[
-  w_i(s) = 1 - \frac{\sum_{I\setminus\{i\}}g(s)}{\sum_I g(s)}
-\]
-so that
-\begin{align*}
-  \frac{\partial w_i}{\partial s_i}(s) &= g'(s_i)\cdot \frac{\sum_{I\setminus\{i\}}g(s)}{(\sum_I g(s))^2} \\
-  &=g'(s_i)\cdot\left[ \frac{1}{\sum_I g(s)} - \frac{g(s_i)}{(\sum_I g(s))^2} \right].
-\end{align*}
-
-To see what's going on here, set $g(s)\equiv s$; the terms are then
-\[
-  \frac{\partial w_i}{\partial s_i}(s)=
-  \underbrace{\frac{1}{\sum_I s}}_{\text{issued share}} - \underbrace{\frac{s_i}{(\sum_I s)^2}}_{\text{dilution}} .
-\]
-Clearly, the value of the newly issued share is independent of the initial share, while the effect of dilution is greater when the initial share is greater.
-
-\begin{lemma}
-
-  Let $U\subset \uR^N\setminus\{0\}$ be open and suppose that $g$ is differentiable and concave on $U$.
-  %
-  Then the even weighting function $w_g := g(s)/\sum g(s)$ is concave on $U$.
-
-\end{lemma}
-%
-\begin{proof}
-
-  By the formula expressed above, $\partial w_i/\partial s_i(s)$ is monotone decreasing as long as $g'(s_i)$ is. \qedhere
-
-\end{proof}
-
-
-\subsection{Node operator actions}
-
-At each epoch, a node operator makes three choices:
-%
-\begin{itemize}
-  \item Transfer an amount $x\in\R$ from a cash account to collateral account.
-  \item Cash out an amount $y\in\uR$ from cash to dividend.
-  \item Either provide the node service, or do not.
-\end{itemize}
-%
-The amounts transferred must be \emph{within budget} in that $x+y\leq C$, the current balance of the cash account, and $-x\leq S$, the balance of the collateral account.
-%
-If $x+y = C$, we say the move is \emph{budget balanced}.
-
-The system may place restrictions on withdrawal from the collateral account.  For example, in versions of the Swarm protocol prior to version 2.2, funds cannot be withdrawn from the collateral account; that is, $x\in\uR$.
-
-\begin{itemize}
-  \item An NO is \emph{passive} if $x_t=0$ and $y_t=C_t$ for all $t$.
+\subsection*{Future milestones}
+\begin{itemize}  
+  \item Study staker decision processes without the assumptions of complete information or stationarity.
+  \item Further rounds of feedback on the proposed objectives the staking system design.
+  \item Pull data on historic staker behaviour and analyse it in the context of our model. Are there any stakers that already exhibit strategic behaviour? Create visualisations.
+  \item Establish conditions for market clearing at the target replication rate.
+  \item Identify aggregate economic indicators and metrics relevant for monitoring and forecasting Swarm storage performance.
 \end{itemize}
 
-\subsection{Objective function}
+\subsection*{Revised milestones}
 
-Fix the following notation:
 \begin{itemize}
-  \item if $x\in \mathbb{R}^I$ is a vector of finite length, write $\sum:=\sum_I:\R^I\rightarrow\R$ for the sum of the coordinates. On $\uR^I$ this coincides with the 1-norm.
-  \item If $J\subseteq I$ is a subset, write $\sum_J$ for the composite $\R^I\stackrel{\pi_J}{\rightarrow}\R^J\stackrel{\sum}{\rightarrow}\R$, that is, summation over the coordinates in $J$.
-  \item If $i\in I$ is a single element, write also $\sum_{\hat{i}}$ as a shorthand for $\sum_{I\setminus\{i\}}$.
-  \item If $M\leq N$ are natural numbers and $x\in\R^{\Overlay\times N}$, write $x_{\leq M}\in \uR^{\Overlay\times M}$ for the projection on the first $M$ terms.
+  \item Numerical solution of Bellman equation for $n$-step strategies in the stochastic setting. 
+  
+  Under perfect information and stationarity, optimal $n$-step strategies terminate in one step, so numerical approaches are not needed.
+  %
+  Under incomplete information, we expect the outcomes to be quite sensitive to model selection, so some theoretical work is needed before practical computations are possible.
+
 \end{itemize}
 
-\paragraph{Concavity of the objective function}
-Let's compute the impulse responses with respect to a single move $x_{i,T}$, assuming all other stakers are passive and player $i$ is passive after epoch $T$.
+\subsection*{Schedule}
+
+\paragraph{October} 
+Consider alternative state transition functions: withdrawable stake, expiring stake.
 %
-First, notice that for $x\in\uR^{\Overlay\times T}$,
-\begin{align*}
-  \frac{\partial w_i}{\partial x_{i,t}}(x) &= \frac{\sum_{\widehat{t,i}} x}{(\sum x)^2} > 0
-\end{align*}
-for $\sum x_{i,<t}>\tau$, where by abuse of notation we denote also by $w_i$, resp.~$g$, the composite of $w_i$, resp.~$g$, with summation over time $\uR^{\Overlay\times N}\stackrel{\sum_{t=0}^N}{\longrightarrow}\uR^\Overlay$.
+Study aggregate economic indicators and price discovery.
 %
-(Note that for simplicity here we should assume that $g$ is the gate function.)
-%
-Moreover, 
-\[
-  \frac{\partial^2 w_i}{\partial x_{i,t}^2}(x) = -2\cdot\frac{\sum_{\widehat{t,i}} x}{(\sum x)^3} < 0
-\]
-so that $w_i$ is strictly concave in $x_{i,t}$ for all $i$ and $t$.
+Introduce time lag effects. 
 
-Now, assuming budget balancing,
-%
-\begin{align*}
-  \frac{\partial V_i}{\partial x_{i,T}}(x) &= \sum_{t=T}^\infty (1-r)^{t-T}\left[ R_t\frac{\partial w_i}{\partial x_{i,T}}(x_{\leq t}) - O_t \right] - 1\\
-  &= \sum_{t=T}^\infty (1-r)^{t-T}\left[ R_t\frac{\partial w_i}{\partial x_{i,T}}(x_{\leq T}) - O_t \right] - 1
-\end{align*}
-since our passivity hypothesis imply $\sum x_{\leq t}=\sum x_{\leq T}$ for all $t\geq T$.
-%
-Then the second derivative is
-\[
-  \frac{\partial^2 V_i}{\partial x_{i,T}^2}(x) = \sum_{t=T}^\infty (1-r)^{t-T} R_t \cdot\frac{\partial^2 w_i}{\partial x_{i,T}^2}(x_{\leq T}) < 0
-\]
-so that $V_i$ too is strictly concave in $x_{i,T}$ whenever $\sum x_{i,<T}>\tau$.
+\paragraph{November} Compile formal LaTeX report. Draft SWIP[s] if alternative proposals are to be accepted.
 
-\paragraph{Threshold}
-Here we'll argue that if the starting collateral $x_{i,0}$ is less than the entry threshold $\tau$, then topping up to an amount in $(x_{i,0},\tau)$ is never a best response.
-%
-Hence the material question for this region is whether topping up to exactly $\tau$ beats doing nothing.
+\paragraph{December} \emph{fin}
 
 
-\subsection{Best responses}
 
-\paragraph{1-step strategies} By concavity, to compute best responses we need to find solutions where $\partial V/\partial x_{i,T}$ vanishes.
-
-Now assume that $R_t\equiv R$ and $O_t\equiv O$ are constants.
-%
-Things simplify to 
-\begin{align*}
-  \frac{\partial V_i}{\partial x_{i,T}}(x) &= \frac{1}{r}\left[R \cdot\frac{\sum_{\widehat{T,i}} x}{(\sum x)^2}  - O \right] - 1.
-\end{align*}
-Solving for local maxima, we find
-\begin{align*}
-  &&\frac{1}{r}\left[R \cdot\frac{\sum_{\widehat{T,i}} x}{(\sum x)^2}  - O \right] &= 1 \\
-  \Rightarrow&& \frac{R}{r} \cdot\frac{\sum_{\widehat{T,i}} x}{(\sum x)^2} &= 1 + O/r \\
-  \Rightarrow&& (\sum x)^2 &= \frac{R\cdot \sum_{\widehat{T,i}} x}{r + O} \\
-  \Rightarrow&& \sum x &= \sqrt{ \frac{R\cdot \sum_{\widehat{T,i}} x}{r + O} } \\
-  \Rightarrow&& x_{i,T} &= \sqrt{ \frac{R\cdot \sum_{\widehat{T,i}} x}{r + O} } - \sum_{\widehat{T,i}} x
-\end{align*}
-Write $A:=\sum_{\widehat{T,i}} x$ for the ``initial'' stake.
-%
-Then under the no withdrawals scheme, $x_{i,T}=0$ is optimal whenever
-\begin{equation} \label{saturation-bound}
-  A \geq \sqrt{ \frac{R\cdot A}{r + O} } \qquad  \Leftrightarrow \qquad A \geq \frac{R}{r + O}.
-\end{equation}
-If the inequality \eqref{saturation-bound} is satisfied, we say the neighbourhood is \emph{saturated}.
-
-Because our model is linear in $O$ and $R$, this calculation immediately tells us something about the best response in expectation when $\tilde{R}_t$ and $\tilde{O}_t$ are stationary processes.
-%
-\begin{proposition}
-
-  Suppose $\tilde{R}_t$ and $\tilde{O}_t$ are stationary processes with means $\mu_R,\mu_O$.
-  %
-  Suppose that from the perspective of agent $a$, the total stake $A$ in a bin $\nu$ is saturated in expectation in the sense that
-  \[
-    A(r+\mu_O) \geq \mu_R
-  \]
-  and that all other agents are passive.
-  %
-  Then $a$'s best response in expectation is to do nothing.
-
-\end{proposition}
-
-\begin{remark}
-
-  If we incorporate into $\tilde R_t$ a factor representing the BZZ/USD price --- say, a geometric Wiener process --- the assumption of stationarity (to be precise, that of finite variance) might not be applicable.
-  %
-  OTOH perhaps a more realistic model for $\tilde R_t$ is based on real dollar demand for cloud storage services as a whole, which is independent from the BZZ/USD price.
-
-\end{remark}
-
-\subsection{Ruin}
-
-A strategy that is strictly budget balanced in each epoch is not suitable in an aleatoric setting where for certain rounds we may have $R_t\cdot w_i(x) < O_t$ in realisation.
-%
-To be able to continue to fund operations in such scenarios, it is necessary to keep some cash $C_t(s_{\leq t})$ on hand.
-%
-We have
-\[
-  C_T = C_0 + \sum_{t\leq T} \left[ R_t\cdot w_i(x_{\leq t}) - (O_t + x_t + y_t) \right].
-\]
-Ruin occurs when we hit $C_T < 0$, i.e.~not enough cash is available to continue operating during the next epoch.
-
-If we assume constant $O_t$, passive staking (so $x_t = 0$), and i.i.d.~$y_t$ and $R_t$, the process $C_T$ is a random walk with increment $R_t\cdot w_i(x_{\leq t}) - y_t$, and results about hitting times of random walks apply.
-
-\subsection{Withdrawing collateral}
-
-Prior to version 2.2, the Swarm protocol forbids any withdrawal from the stake registry except in extenuating network-wide circumstances.
-%
-That is, the collateral top-up $x_t$ at each time step is restricted to $\uR$.
-%
-The bin share thereby acquired is a \emph{perpetuity}.
-
-Various other systems are possible:
-%
-\begin{itemize}
-  \item 
-    If withdrawals are permitted at any time, then a bin share acquires an option value with a strike price of $1$.
-    %
-    Here we use the convention that $1$ PLUR buys $1$ bin share.
-
-  \item
-    If stake is automatically withdrawn after a fixed time, the bin share resembles a bond.
-
-  \item
-    Under SWIP-19, collateral can be withdrawn at any time if the balance is affected by BZZ/USD  price fluctuations.
-    
-  \item
-    Under SWIP-20, bin shares can be fully, but not partially, redeemed at any time in exchange for the same number of shares in a different bin.
-\end{itemize}
-%
-Clearly, introducing any type of optionality into the share system renders the computation of its net present value more complicated.
 
 \newpage
-\section{Estimating parameters}
+\section*{Findings}
 
-\subsection{Operating costs}
-
-The process $\tilde{O}_t$ represents the cost of operating a single node for a single epoch.
-%
-To break it down into more intuitive figures, let's consider instead the cost $\#\{\text{epochs in 30 days}\}\cdot O\approx 3410\cdot O$ of running a node for a month.
+\begin{comment}
+\subsection*{Summary}
 
 \begin{itemize}
-  \item Premises (including rent and utilities)
-  \item Bandwidth
-  \item Labour
-  \item Financing capex on hardware
+  \item 
+  \item We studied risk of drawdowns and ruin for NOs of different sizes and its dependence on the reward lottery structure.
+  \item We couched the pre-2.2 stake system and SWIPs 19 and 20 in a language of equity and options which aids intuition.
+  %
+  The objective of this activity was to formulate a generalised model that incorporates current proposals and is flexible enough to provide a common language for the evaluation of future proposals.
+  %
+  This framework is not yet complete.
 \end{itemize}
-If using space in a data centre, premises and bandwidth are likely bundled together in the same bill.
+\end{comment}
+
+\subsection*{Objectives of the NO incentive system design}
+
+On discussion with the client, we revised and clarified our approach to defining system design objectives.
+
+\subsubsection*{Incentivise provision of the storage service}
+
+The most fundamental objective of the NO incentive system is to incentivise providing storage. 
 %
-If using cloud services, so too are hardware costs.
+A simple quantitative interpretation of this objective is as follows: each epoch, Swarm offers an amount of revenue $R_t$ in exchange for the provision of $K_t$ bytes of storage capacity.
 %
-So the cost of running nodes in the cloud provides a reasonable upper bound to $O$.
+Then in (some suitably chosen notion of) equilibrium, there should be enough operating nodes to store the requested number of bytes at the target replication rate.
+
+The component of the NO incentive system that controls for this objective is the price oracle: if storage is underprovisioned, increasing the unit price of storage both attracts more supply and attenuates $K_t$.
+%
+Conversely, if storage is overprovisioned, it manifests as a replication rate over the target, and a reduction in unit price has the opposite effect.
+
+\subsubsection*{Competitiveness, decentralisation, and efficiency}
+
+We've talked before about things like ``low returns to operator scale'' and ``cost of entry.'' We posit that the underlying intuition behind these objectives is one of \emph{decentralisation} or \emph{competitiveness}.
+%
+Roughly speaking, the intention here is that the NO market should not be susceptible to monopolistic or oligopolistic market structure.
+
+Decentralisation can be assessed in the present by calculating a measure of decentralisation such as the Shannon entropy or Herfindahl-Hirschman index (a.k.a.~$L^2$-norm).
+%
+For example, if the ideal stake distribution in any neighbourhood is evenly weighted among 4 nodes, then the target entropy is $\log(4)=2$ bits.
+
+We can also use our models to assess the \emph{propensity} of the system to become centralised in the future.
+%
+Here are some of the model features we have studied, interpreted in this light:
+\begin{enumerate}
+  \item \emph{Investment landscape for new entrants.} If a new opportunity arises, for example because overall network revenue prospects have improved, there is room to deploy capital via new entrants rather than incumbents. (This is related to the cost of entry and returns to scale criteria considered last month.)
+  \item \emph{Dispersion of the operating cost distribution.} An NO should not need the absolute minimum operating cost in the market to be able to compete. Operating costs among NOs should be somewhat dispersed. (Since large scale tends to be associated with low operating costs, this is also a returns to scale feature.) 
+  \item \emph{Cost of risk at different scales.} Small node operations should not be unviable because of risk issues. The community should agree on a practical threshold for ``small.'' (We called this feature ``variance of rewards'' last month.)
+\end{enumerate}
+
+We also considered the tradeoff between decentralisation and \emph{efficiency}.
+%
+Roughly speaking, the Swarm Protocol is efficient if lower average NO costs result in lower prices for consumers.
+%
+A criterion of efficiency is that NOs with lower operating costs can achieve a larger market share; this criterion competes with that of dispersion of the operating cost distribution.
+
+\begin{comment}
+\subsubsection*{List of objectives}
+
+Here are the revised candidate objectives for the NO incentive system:
+
+\begin{enumerate}
+  \item \emph{Incentivise service provision.} See above.
+  \item \emph{Sybil resistance.} See August report.
+  \item \emph{Penalising safety replication failures.} Nodes that fail to report storage proofs for the ``correct'' set of chunks for their neighbourhood should be penalised by having their stake slashed and hence their authorisation to participate in redistribution revoked.
+  
+  Replication failures are a failure of consensus, hence arguably a type of \emph{safety fault}, not a liveness fault as indicated in last month's report.
+  %
+  However, the replication consensus system itself is 
+
+  \item \emph{Limited returns to operator scale.} See above.
+  \item \emph{Create or accentuate demand pressure for BZZ token.} See August report.
+\end{enumerate}
+\end{comment}
+
+\subsection*{Risk parameters}
+
+Risk management is a cost of doing business.
+%
+Since smaller operators are typically both more exposed to risk and less able to accurately estimate it, they bear a disproportionate cost in accounting for risk, hence limiting their potential productivity.
+%
+Thus quantifying the effects of NO and network scaling on risk helps us understand the tradeoff between decentralisation and efficiency of the market as a whole.
+
+Risk comes into play through all random or unknown elements of the model: total network revenue, operating costs, the lottery determining who receives the payout in each epoch, and the unknown incentive functions and strategies of other NOs.
+%
+This month we focused on the best-controlled source of risk: the redistribution lottery.
+
+\begin{comment}
+\subsubsection*{Redistribution lottery structure}
+ 
+A risk factor that is straightforwardly under the direct control of the system is the structure of the redistribution lottery.
+%
+Currently, in each epoch the full redistribution payout is awarded to a single NO with probability weighted by the number of bins and the NO share within the target bin.
+%
+Clearly, such an approach has higher variance than the expectation-equivalent deterministic system, which doles out a share of the payout weighted by the number of bins and bin share with probability $1$.
+
+The random approach saves on computational costs by reducing the number of transfers that must be made in each epoch.
+%
+On the other hand, it introduces a risk of drawdowns and bankruptcy that especially affects smaller scale NOs, who may experience long strings of epochs without receiving any payout.
+\end{comment}
+
+\subsubsection*{Ruin probabilities}
+
+Consider a model where an NO starts with initial operating cash $C_0$ and has constant per epoch operating cost $O>0$.
+%
+Assume that share distribution is fixed and the per epoch network revenue is a constant $R>0$.
+%
+Each epoch, our target NO receives $R$ with probability $p\in[0,1]$; if there are $2^D$ neighbourhoods and he holds a share weight $0<w\leq 1$ in his neighbourhood, then $p=2^{-D}w$.
+%
+Assuming no cash is withdrawn, the operating cash in epoch $n$ is governed by
+\[
+  C_n = C_0 - nO + RU_n \qquad\text{where}\qquad U_n\sim \mathrm{Binom}(n,p).
+\]
+In particular, it is linear in a binomial random variable $U_n$, and risk parameters can therefore be computed in terms of the binomial distribution.
+
+\begin{itemize}
+  \item A naive first approximation to the risk of ruin is the probability $(1-p)^{\left\lfloor C_0/O \right\rfloor}$ of \emph{never} receiving a single payout before going bust.
+  %
+  This value is a lower bound for the risk of ruin; depending on the relative size of $p$, $C_0/O$, and $R/O$, it may not be very tight.
+
+  \item A widely used risk measure is the value-at-risk at probability $q\in(0,1)$, which is the largest cash reserve level $K$ such that $\mathbb{P}(C_n\geq K)\geq q$, a.k.a.~the quantile function of $K$ evaluated at $q$.
+  %
+  This can be computed quite efficiently for binomial variables; see the attached notebooks.
+  
+  VaR does not register larger drawdowns before the end of the period, nor does it track the size of losses that occur if losses do exceed the threshold.
+  
+  \item 
+    The true ruin probability $\Prob(T_{\leq 0}<N)$, where $N\in\N\cup\{\infty\}$ is the investment horizon and $T_{\leq 0}\in\N$ is the first epoch $t$ at which $C_t\leq 0$, is of course more complicated to compute.
+    %
+    As the number of sample paths scales like $2^N$, a brute force approach soon draws out of reach as $N$ increases.
+
+    In the discrete setting, the \emph{hitting time theorem} gives us a route to an exact form.
+    %
+    To achieve this, rescale the unit of account so that $O=1$ and assume that $R$ and $C_0$ are exact integer multiples of $O$; though artificial, this adjustment is harmless when $O\ll C_0,R$.
+    %
+    Then $C_n$ is a left continuous random walk with step size $RX - 1$, where $X\sim\mathrm{Bernoulli}(p)$, and the hitting time theorem gives us
+    \[
+      \Prob(T_0 = n) = \frac{C_0}{n}\Prob(C_n = 0).
+    \]
+    Summing up over all $n$ and $C_0$, we may compute the generating function of these numbers using the elementary formula $\Expectation[z^{U_n}] = ((1-p) + pz)^n$ for the PGF of the binomial distribution, from which can be extracted closed forms for the ruin probabilities.
+    %
+    Alternatively, the RHS can be computed directly quite quickly using a computer.    
+
+\end{itemize}
+
+
+Empirically, with $C_0$ set to three months of operating costs and a network depth of $D=11$, corresponding to a total network storage capacity of $32$TiB, the probability of ruin in finite time for a small operator with 1 node, resp.~16 nodes, is at least $77.36\%$, resp.~$5.07\%$.
+    
+With the full network at exabyte scale ($D=26$) and per node revenue conditions similar to the present network, the situation for a 16-node operator is stark: we have a $0.9975$ probability of receiving no rewards in a year.
+%
+On the other hand, the payout in the unlikely case of receiving a reward before the cash reserve runs out is so large that ruin cannot occur again for 437 years.\footnote{These numbers were produced using mildly hacked prices of AWS EC2 instances, the current Swarm network reward pot as reported on \url{https://www.ethswarm.org/get-bzz}, and a plausible BZZ/USD price.}
+
+\subsection*{Parametrising the redistribution mechanism}
+
+We explored ways to introduce parameters into the NO incentive mechanism so as to consider both proposed and hitherto unexplored variants on an equal footing.
+
+\subsubsection*{Pricing shares}
+
+A position in the Swarm stake registry can be interpreted as an \emph{equity share} in the neighbourhood that pays dividends on the neighbourhood's future revenue.
+%
+Adding more stake causes more shares to be minted, resulting in \emph{dilution} of the outstanding shares.
+
+We believe that the language of equity, issuance, and dilution makes the financial structure of the staking system more intuitively clear, and recommend that this terminology be introduced into the Swarm Protocol communication strategy.
+
+The number of shares corresponding to a balance in the stake registry is a matter of convention, the most natural one being that $1$ share equals $1$ staked PLUR.
+%
+If non-integer numbers of shares are allowed, any price $p\in\N_+$ leads to a convention where $1$ share equates to $p$ PLUR in the stake registry.
+%
+For example, a convenient choice might be to set $p=10^{16}$, i.e.~$1$ BZZ.
+%
+This choice does not affect any dynamics of the model.
+
+A true generalisation is to introduce a dynamic share price $p_t$.
+%
+SWIP-20 introduces such a scheme and explicitly names the equity balance as a new field of \emph{committed stake}.
+%
+Under SWIP-20, $p_t$ is the unit price of storage as provided by the price oracle contract in that epoch.
+
+\subsubsection*{Optionality}
+
+An \emph{optionality} on a share is an action that the holder can choose to take that ``burns'' it in exchange for some other asset.
+%
+Optionality on shares makes it easier to develop adaptive strategies, and hence generally makes the game more accessible to less sophisticated NOs.
+
+  SWIPs 19 and 20 introduce optionalities on neighbourhood shares. To be precise:
+  \begin{itemize}
+    \item Neighbourhood hopping can be seen as an option to \emph{convert} shares in one bin to shares in another bin on a one-to-one basis.
+    \item The ``excess stake'' withdrawal introduced in SWIP-20 can be understood as an option to \emph{redeem} shares at the price at which they were bought and immediately repurchase at the current market price.
+    %
+    Redemption without repurchase is not allowed.
+    %
+    Note however that this interpretation requires us to posit a different asset type for shares purchased at different prices.
+  \end{itemize}
+\begin{comment}
+\subsubsection*{Assumptions of the current model}
+
+This month we were able to lift some of the assumptions of the model we studied in August, but quite a few remain:
+\begin{itemize}
+  \item Perfect information: all players know the strategies of the other players at all future steps. Perhaps a more realistic approach is to model the mechanism as a (dynamic) Bayes game of incomplete information.
+  \item Stationarity: the (expected) revenue of the target neighbourhood remains constant. In reality, expected revenue is affected by network demand, the decisions of stakers via the price oracle, and the price of competing services.
+  %
+  Similarly, operational costs depend on the costs of hardware and electricity.
+  \item We considered all costs and rewards as BZZ denominated. But operational costs and the time preference discount rate $r$ are more easily modelled in terms of fiat currency.
+  \item We didn't model any time delays between stake top-ups and reward weight updates.
+  \item We didn't model the risk of being frozen or slashed due to liveness failures.
+  \item We didn't incorporate changes to the gate function introduced in SWIP-20.
+  \item We assumed the neighbourhood count remains constant.
+\end{itemize}
+\end{comment}
