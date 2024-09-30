@@ -1,0 +1,385 @@
+\maketitle
+%\thispagestyle{fancy}
+\section{Introduction}
+
+This is the full report.
+
+
+\subsection{Swarm mechanism}
+
+The Swarm mechanism is defined in \cite{book-of-swarm}.
+
+In our study, we focus only on the procurement auction side of the mechanism, which governs the relationship between storage providers and the Swarm system.
+%
+The demand-side part of the relationship, governing the relationship between storage clients and the Swarm system, is out of scope.
+
+The mechanism underlying the Swarm protocol can be understood as comprising three sets of agents exchanging financial instruments:
+\begin{itemize}
+  \item Users, a.k.a.~storage clients;
+  \item The Swarm system, comprising (a) its set of smart contracts (deployed on Gnosis Chain) and (b), the p2p network considered as an opaque blob with which data can be exchanged;
+  \item Node operators, a.k.a.~storage providers.
+\end{itemize}
+Storage clients and storage providers do not trade with one another directly; rather, their trade is mediated by the Swarm system accounts.
+%
+On the demand side, users buy storage quotas from the \emph{postage stamp} contract via a posted price mechanism. This component of the system is out of scope for our study.
+
+
+\subsection{Storage service}
+
+On the supply side, node operators (henceforth NOs) provide a fixed service to the system, storing the data chunks delivered into their neighbourhood.
+%
+For simplicity, we hence assume that an NO's decision space surrounding this service is simply a binary: the service is either on or off during any given epoch.
+%
+We also assume that whenever the service is on, the NO remains in consensus with the rest of the neighbourhood; that is, slashing over safety failures is not considered.
+%
+Intermediate strategies, where service is provided only for a subset of chunks, are out of scope.
+
+\section{Objectives of the system design}
+
+\subsection{Decentralisation}
+
+Use HHI or Shannon entropy.
+
+\subsection{Efficiency}
+
+Efficiency means that potential lower operating costs are reflected in lower prices for users.
+%
+A simple measure of allocative efficiency in an RN is $-\sum_{i\in\nu}O_i<0$, closer to $0$ being more efficient.
+%
+However, $O_i$ cannot be measured directly, so we have to rely on observing reallocation events.
+%
+The more volume of such events occur, the more quickly efficient allocations can be reached and the more we can infer about $O_i$.
+
+\section{Model description}
+
+\subsection{Addresses}
+
+The set of agents is denoted $\Overlay$.
+%
+It can be realised as a set of \emph{overlay addresses}, for example, $\Overlay \cong \mathbb{F}_2^{256}$.
+
+The set of overlay addresses is divided into a set $\Bins$ of \emph{bins}.
+%
+In \cite{book-of-swarm}, these are also called \emph{neighbourhoods}; we prefer the term `bins' because neighbourhoods can also be of various different sizes.
+%
+We are given a surjective map $\bin:\Overlay\rightarrow\Bins$ that takes an overlay address to the bin to which it belongs.
+%
+The fibre of $\bin$ over a bin $\nu\in\Bins$ is denoted $\Overlay_\nu$.
+
+In deployments, we have $\Bins\cong \mathbb{F}_2^D$ and the function $\bin$ is projection on the first $D$ bits, where $D$ is a network-wide dynamic variable called the \emph{network (log-)radius}.
+%
+For any $\nu\in\Bins$, we can then identify $\Overlay_\nu\simeq\mathbb{F}_2^{256-D}$ by projecting out the first $D$ bits.
+
+
+\subsection{Balances}
+\begin{itemize}
+  \item 
+    Write $\uR := [0,\infty)$. Except when otherwise indicated, we consider it equipped with Lebesgue measure.
+
+  \item
+    Each agent is considered to run three accounts: cash, dividend, and collateral (i.e.~stake).
+    %
+    The state space for each agent is therefore $\simeq\uR^3$.
+    %
+    Of these, only the collateral is explicitly registered in a Swarm contract, the stake registry; cash and dividend balances are an abstraction (though they may correspond roughly to the balance of an Ethereum address associated to the overlay address and the total outflows from that address to targets other than the Swarm stake registry, respectively).
+
+  \item
+    The \emph{network revenue} at time $t$ is denoted $R_t\in \uR$.
+    %
+    The sequence $\{R_t\}_{t\in\N}$ is a random process.
+
+  \item
+
+\end{itemize}
+
+
+
+\subsection{Storage service}
+
+In order to receive rewards, node operators (NOs) must provide a \emph{storage service} to the network.
+%
+The primary objective of the incentive system on the supply side is to ensure that this storage service is provided to a satisfactory standard.
+
+For the purpose of this report, we assume that the Swarm protocol is able to detect whether or not the storage service is provided and that payouts are contingent on this.
+%
+It follows that during each epoch, each NO may choose between providing the service or not providing it; there are no third options where the system can be `fooled' into paying out a reward where there is no service.
+
+We also assume that each NO operates at most one node.
+%
+Hence, we do not consider the deduplication attack.
+
+The \emph{operating cost} of an agent $a\in\Overlay$ at time $t$ is denoted $O_{a,t}\in\uR$.
+%
+In practice, the operating cost of an agent comprises \emph{fixed} and \emph{variable} costs:
+\begin{itemize}
+  \item 
+    Fixed costs are costs that persist regardless of whether the agent provides the storage service.
+    %
+    Examples of fixed costs include rent, wages of full-time employees, and financing debt.
+
+  \item
+    Variable costs are costs only incurred when actually providing the service.
+    %
+    Examples include electricity and bandwidth.
+\end{itemize}
+
+The division into fixed and variable costs, although typical in business operations management, is an over-simplification.
+%
+\begin{enumerate}
+  \item 
+    If the service is stopped temporarily, depending on the scale of the stoppage, some costs could occur as variable or fixed.
+    %
+    For example, it may or may not be possible to lay off employees and then rehire when resuming service.
+
+  \item
+    Starting the service after a stoppage, or for the first time, may incur a startup cost.
+    %
+    This can be amortised and absorbed into the opex cost process.
+\end{enumerate}
+
+\subsection{Weighting functions}
+
+\begin{definition}
+
+  A \emph{weighting function} on a stake registry $\uR^N\setminus\{0\}$ is a measurable function $w:\uR^N\rightarrow[0,1]^N$ such that $\sum w(\vec{s}) \leq 1$ for all $\vec{s}\in \uR^N$.
+  %
+  A weighting function is \emph{complete} if in fact $\sum w(s) = 1$ for all $s\in \uR^N$.
+
+\end{definition}
+
+\begin{example}[Even weighting]
+  \emph{Even weighting} is the complete weighting function $w(s) = s/\sum s$.
+\end{example}
+
+
+\begin{example}[Adjusted shares]
+
+  Suppose given an \emph{adjustment} function $g:\uR\rightarrow\uR$. 
+  %
+  Applying it to each coordinate gives a function
+  %
+  Then the \emph{adjusted} even weighting function is defined $w(s) = g(s)/\sum g(s)$.
+
+\end{example}
+
+\begin{example}[Entry threshold]
+  For any $\tau\in\uR$, we can define a ``gate'' function by
+  \[
+    g_\tau(r) := \left\{\begin{array}{ll} 0 & r<\tau \\ r & r\geq\tau\end{array}\right.
+  \]
+\end{example}
+
+For each $i\in I$, observe that
+\[
+  w_i(s) = 1 - \frac{\sum_{I\setminus\{i\}}g(s)}{\sum_I g(s)}
+\]
+so that
+\begin{align*}
+  \frac{\partial w_i}{\partial s_i}(s) &= g'(s_i)\cdot \frac{\sum_{I\setminus\{i\}}g(s)}{(\sum_I g(s))^2} \\
+  &=g'(s_i)\cdot\left[ \frac{1}{\sum_I g(s)} - \frac{g(s_i)}{(\sum_I g(s))^2} \right].
+\end{align*}
+
+To see what's going on here, set $g(s)\equiv s$; the terms are then
+\[
+  \frac{\partial w_i}{\partial s_i}(s)=
+  \underbrace{\frac{1}{\sum_I s}}_{\text{issued share}} - \underbrace{\frac{s_i}{(\sum_I s)^2}}_{\text{dilution}} .
+\]
+Clearly, the value of the newly issued share is independent of the initial share, while the effect of dilution is greater when the initial share is greater.
+
+\begin{lemma}
+
+  Let $U\subset \uR^N\setminus\{0\}$ be open and suppose that $g$ is differentiable and concave on $U$.
+  %
+  Then the even weighting function $w_g := g(s)/\sum g(s)$ is concave on $U$.
+
+\end{lemma}
+%
+\begin{proof}
+
+  By the formula expressed above, $\partial w_i/\partial s_i(s)$ is monotone decreasing as long as $g'(s_i)$ is. \qedhere
+
+\end{proof}
+
+
+\subsection{Node operator actions}
+
+At each epoch, a node operator makes three choices:
+%
+\begin{itemize}
+  \item Transfer an amount $x\in\R$ from a cash account to collateral account.
+  \item Cash out an amount $y\in\uR$ from cash to dividend.
+  \item Either provide the node service, or do not.
+\end{itemize}
+%
+The amounts transferred must be \emph{within budget} in that $x+y\leq C$, the current balance of the cash account, and $-x\leq S$, the balance of the collateral account.
+%
+If $x+y = C$, we say the move is \emph{budget balanced}.
+
+The system may place restrictions on withdrawal from the collateral account.  For example, in versions of the Swarm protocol prior to version 2.2, funds cannot be withdrawn from the collateral account; that is, $x\in\uR$.
+
+\begin{itemize}
+  \item An NO is \emph{passive} if $x_t=0$ and $y_t=C_t$ for all $t$.
+\end{itemize}
+
+\subsection{Objective function}
+
+Fix the following notation:
+\begin{itemize}
+  \item if $x\in \mathbb{R}^I$ is a vector of finite length, write $\sum:=\sum_I:\R^I\rightarrow\R$ for the sum of the coordinates. On $\uR^I$ this coincides with the 1-norm.
+  \item If $J\subseteq I$ is a subset, write $\sum_J$ for the composite $\R^I\stackrel{\pi_J}{\rightarrow}\R^J\stackrel{\sum}{\rightarrow}\R$, that is, summation over the coordinates in $J$.
+  \item If $i\in I$ is a single element, write also $\sum_{\hat{i}}$ as a shorthand for $\sum_{I\setminus\{i\}}$.
+  \item If $M\leq N$ are natural numbers and $x\in\R^{\Overlay\times N}$, write $x_{\leq M}\in \uR^{\Overlay\times M}$ for the projection on the first $M$ terms.
+\end{itemize}
+
+\paragraph{Concavity of the objective function}
+Let's compute the impulse responses with respect to a single move $x_{i,T}$, assuming all other stakers are passive and player $i$ is passive after epoch $T$.
+%
+First, notice that for $x\in\uR^{\Overlay\times T}$,
+\begin{align*}
+  \frac{\partial w_i}{\partial x_{i,t}}(x) &= \frac{\sum_{\widehat{t,i}} x}{(\sum x)^2} > 0
+\end{align*}
+for $\sum x_{i,<t}>\tau$, where by abuse of notation we denote also by $w_i$, resp.~$g$, the composite of $w_i$, resp.~$g$, with summation over time $\uR^{\Overlay\times N}\stackrel{\sum_{t=0}^N}{\longrightarrow}\uR^\Overlay$.
+%
+(Note that for simplicity here we should assume that $g$ is the gate function.)
+%
+Moreover, 
+\[
+  \frac{\partial^2 w_i}{\partial x_{i,t}^2}(x) = -2\cdot\frac{\sum_{\widehat{t,i}} x}{(\sum x)^3} < 0
+\]
+so that $w_i$ is strictly concave in $x_{i,t}$ for all $i$ and $t$.
+
+Now, assuming budget balancing,
+%
+\begin{align*}
+  \frac{\partial V_i}{\partial x_{i,T}}(x) &= \sum_{t=T}^\infty (1-r)^{t-T} R_t\frac{\partial w_i}{\partial x_{i,T}}(x_{\leq t}) - 1\\
+  &= \sum_{t=T}^\infty (1-r)^{t-T} R_t\frac{\partial w_i}{\partial x_{i,T}}(x_{\leq T})  - 1
+\end{align*}
+since our passivity hypothesis imply $\sum x_{\leq t}=\sum x_{\leq T}$ for all $t\geq T$.
+%
+Then the second derivative is
+\[
+  \frac{\partial^2 V_i}{\partial x_{i,T}^2}(x) = \sum_{t=T}^\infty (1-r)^{t-T} R_t \cdot\frac{\partial^2 w_i}{\partial x_{i,T}^2}(x_{\leq T}) < 0
+\]
+so that $V_i$ too is strictly concave in $x_{i,T}$ whenever $\sum x_{i,<T}>\tau$.
+
+\paragraph{Threshold}
+Here we'll argue that if the starting collateral $x_{i,0}$ is less than the entry threshold $\tau$, then topping up to an amount in $(x_{i,0},\tau)$ is never a best response.
+%
+Hence the material question for this region is whether topping up to exactly $\tau$ beats doing nothing.
+
+
+\subsection{Best responses}
+
+\paragraph{1-step strategies} By concavity, to compute best responses we need to find solutions where $\partial V/\partial x_{i,T}$ vanishes.
+
+Now assume that $R_t\equiv R$ is constant.
+%
+Things simplify to 
+\begin{align*}
+  \frac{\partial V_i}{\partial x_{i,T}}(x) &= \frac{1}{r}R \cdot\frac{\sum_{\widehat{T,i}} x}{(\sum x)^2} - 1.
+\end{align*}
+Solving for local maxima, we find
+\begin{align*}
+  &&\frac{R}{r}\cdot\frac{\sum_{\widehat{T,i}} x}{(\sum x)^2} &= 1 \\
+  \Rightarrow&& (\sum x)^2 &= \frac{R\cdot \sum_{\widehat{T,i}} x}{r} \\
+  \Rightarrow&& \sum x &= \sqrt{ \frac{R\cdot \sum_{\widehat{T,i}} x}{r} } \\
+  \Rightarrow&& x_{i,T} &= \sqrt{ \frac{R\cdot \sum_{\widehat{T,i}} x}{r} } - \sum_{\widehat{T,i}} x
+\end{align*}
+Write $A:=\sum_{\widehat{T,i}} x$ for the ``initial'' stake.
+%
+Then under the no withdrawals scheme, $x_{i,T}=0$ is optimal whenever
+\begin{equation} \label{saturation-bound}
+  A \geq \sqrt{ \frac{R\cdot A}{r} } \qquad  \Leftrightarrow \qquad A \geq R/r.
+\end{equation}
+If the inequality \eqref{saturation-bound} is satisfied, we say the neighbourhood is \emph{saturated}.
+%
+Otherwise, if $A<R/r$, the optimal play is $x_{i,T}=\sqrt{AR/r} - A$.
+%
+That is, the optimal play tops up the total stake in the neighbourhood to the geometric mean of the previous stake $A$ and the saturation point $R/r$.
+
+Because our model is linear in $O$ and $R$, this calculation immediately tells us something about the best response in expectation when $\tilde{R}_t$ and $\tilde{O}_t$ are stationary processes.
+%
+\begin{proposition}
+
+  Suppose $\tilde{R}_t$ and $\tilde{O}_t$ are stationary processes with means $\mu_R,\mu_O$.
+  %
+  Suppose that from the perspective of agent $a$, the total stake $A$ in a bin $\nu$ is saturated in expectation in the sense that
+  \[
+    Ar \geq \mu_R
+  \]
+  and that all other agents are passive.
+  %
+  Then $a$'s best response in expectation is to do nothing.
+
+\end{proposition}
+
+\begin{remark}
+
+  If we incorporate into $\tilde R_t$ a factor representing the BZZ/USD price --- say, a geometric Wiener process --- the assumption of stationarity (to be precise, that of finite variance) might not be applicable.
+  %
+  OTOH perhaps a more realistic model for $\tilde R_t$ is based on real dollar demand for cloud storage services as a whole, which is independent from the BZZ/USD price.
+
+\end{remark}
+
+\subsection{Ruin}
+
+A strategy that is strictly budget balanced in each epoch is not suitable in an aleatoric setting where for certain rounds we may have $R_t\cdot w_i(x) < O_t$ in realisation.
+%
+To be able to continue to fund operations in such scenarios, it is necessary to keep some cash $C_t(s_{\leq t})$ on hand.
+%
+We have
+\[
+  C_T = C_0 + \sum_{t\leq T} \left[ R_t\cdot w_i(x_{\leq t}) - (O_t + x_t + y_t) \right].
+\]
+Ruin occurs when we hit $C_T < 0$, i.e.~not enough cash is available to continue operating during the next epoch.
+
+If we assume constant $O_t$, passive staking (so $x_t = 0$), and i.i.d.~$y_t$ and $R_t$, the process $C_T$ is a random walk with increment $R_t\cdot w_i(x_{\leq t}) - y_t$, and results about hitting times of random walks apply.
+
+\subsection{Options}
+
+Prior to version 2.2, bin shares cannot be redeemed except in extenuating network-wide circumstances.
+%
+That is, equity purchase $x_t$ at each time step is restricted to $\uR$.
+%
+The bin share thereby acquired is a \emph{perpetuity}.
+
+Various other systems are possible:
+%
+\begin{itemize}
+  \item 
+    If withdrawals are permitted at any time, then a bin share acquires an option value with a strike price of $1$.
+    %
+    Here we use the convention that $1$ PLUR buys $1$ bin share.
+
+  \item
+    If stake is automatically withdrawn after a fixed time, the bin share resembles a bond.
+
+  \item
+    Under SWIP-19, collateral can be withdrawn at any time if the balance is affected by BZZ/USD  price fluctuations.
+    
+  \item
+    Under SWIP-20, bin shares can be fully, but not partially, redeemed at any time in exchange for the same number of shares in a different bin.
+\end{itemize}
+%
+Clearly, introducing any type of optionality into the share system renders the computation of its net present value more complicated.
+
+\newpage
+\section{Estimating parameters}
+
+\subsection{Operating costs}
+
+The process $\tilde{O}_t$ represents the cost of operating a single node for a single epoch.
+%
+To break it down into more intuitive figures, let's consider instead the cost $\#\{\text{epochs in 30 days}\}\cdot O\approx 3410\cdot O$ of running a node for a month.
+
+\begin{itemize}
+  \item Premises (including rent and utilities)
+  \item Bandwidth
+  \item Labour
+  \item Financing capex on hardware
+\end{itemize}
+If using space in a data centre, premises and bandwidth are likely bundled together in the same bill.
+%
+If using cloud services, so too are hardware costs.
+%
+So the cost of running nodes in the cloud provides a reasonable upper bound to $O$.
