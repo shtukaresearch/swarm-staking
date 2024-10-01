@@ -8,7 +8,7 @@ Our goals for this month were as follows:
 
 \begin{itemize}
   \item 
-    Begin formalising game-theoretic arguments in a {\em stochastic} setting building on last month's work based purely on {\em expectations.}
+    Begin formalising game-theoretic arguments in a stochastic setting building on last month's work based purely on expectations.
     %
     Incorporate details such as operating cost, amortised capex, and the stake threshold.
   \item
@@ -204,14 +204,17 @@ We assumed share distribution is fixed and the per epoch network revenue is a co
 Each epoch, our target NO receives $R$ with probability $p\in[0,1]$; if there are $2^D$ neighbourhoods and he holds a share weight $0<w\leq 1$ in his neighbourhood, then $p=2^{-D}w$.
 %
 Assuming no cash is withdrawn, we derive a closed form for the operating cash in epoch $n$ using the recurrence
-
+%
 \[
-  C_i = C_{i-1} - O - RX_i~ \text{where}~ X_i \sim \mathrm{Bernoulli}(p).
+  C_i = C_{i-1} - O - RX_i \quad \text{where} \quad X_i \sim \mathrm{Bernoulli}(p) \quad \text{i.i.d.}
 \]
 This gives 
-\[
-  C_n = C_{n-2} - 2O + RX_1 + RX_2 = \cdots = C_0 + nO + R\sum X_i = C_0 - nO + RU_n,
-\]
+\begin{align*}
+  C_n &= C_{n-2} - 2O + RX_1 + RX_2 \\
+  & =\cdots \\
+  &= C_0 + nO + R\sum_{i=1}^n X_i \\
+  &= C_0 - nO + RU_n,
+\end{align*}
 where $U_n = \sum X_i \sim \mathrm{Binom}(n,p)$.
 
 In particular, it is linear in a binomial random variable $U_n$, and risk parameters can therefore be computed in terms of the binomial distribution.
@@ -235,8 +238,12 @@ In particular, it is linear in a binomial random variable $U_n$, and risk parame
     %
     To achieve this, rescale the unit of account so that $O=1$ and assume that $R$ and $C_0$ are exact integer multiples of $O$.\footnote{Though artificial, this adjustment is harmless when $O\ll C_0,R$.}
     %
-    Then $C_n$ is a left continuous random walk with step size 
-    $$Y_i = \delta C_i = C_i - C_{i-1} = - 1 + RX_i$$ and the hitting time theorem gives us
+    Then $C_n$ is a left continuous random walk with step size
+    % 
+    \[
+      Y_i = \delta C_i = C_i - C_{i-1} = - 1 + RX_i,
+    \] 
+    and the hitting time theorem gives us
     \[
       \Prob(T_0 = n) = \frac{C_0}{n}\Prob(C_n = 0).
     \]
