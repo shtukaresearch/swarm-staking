@@ -23,7 +23,7 @@ Our goals for this month were as follows:
 
 For evaluating risk associated with the redistribution lottery, we used a random walks approach together with the standard actuarial measures value-at-risk and ruin probability.
 %
-We also developed a Python notebook to analyse risk models at different scales and compute these metrics. The notebook is available at the GitHub repo for this project.\footnote{\url{https://github.com/shtukaresearch/swarm-staking/blob/main/notebooks/risk-model.ipynb}}
+We also developed a Python notebook to analyse risk models and compute metrics at different scales. The notebook is available at the GitHub repo for this project.\footnote{\url{https://github.com/shtukaresearch/swarm-staking/blob/main/notebooks/risk-model.ipynb}}
 
 We approached the parametrised generalisation of the incentive model by direct inspection of the action spaces and state transition functions to see where parameters and binary design choices can be introduced, especially where these admit interpretations in traditional financial terms. 
 %
@@ -36,15 +36,14 @@ The scope of this month's work is the node operator incentive system, which incl
 %
 We introduce the storage unit price oracle and treat it as a black box.
 
-We started to consider parameters that can be introduced to generalise the model.
-%
-In particular, we considered how to incorporate two proposed adjustments to the stake registry: SWIPs 19\footnote{\url{https://github.com/ethersphere/SWIPs/pull/48}} and 20\footnote{\url{https://github.com/ethersphere/SWIPs/pull/49}}, which are were implemented in Version 2.2 of the Bee client, released this month.\footnote{\url{https://github.com/ethersphere/bee/releases/tag/v2.2.0}}
+We introduced parameters to generalise the model and incorporated the changes in SWIPs 19\footnote{\url{https://github.com/ethersphere/SWIPs/blob/master/SWIPs/swip-19.md}} and 20\footnote{\url{https://github.com/ethersphere/SWIPs/blob/master/SWIPs/swip-20.md}}, which are implemented as of Version 2.2 of the Bee client, released this month.\footnote{\url{https://github.com/ethersphere/bee/releases/tag/v2.2.0}}
+
+For the risk model, we continued to assume each node is associated with a fixed amount of storage. That is, we did not take into account SWIP-21.\footnote{\url{https://github.com/ethersphere/SWIPs/pull/56}}
 
 \section*{Operations management}
 
 \subsection*{Completed Milestones}
 
-%\paragraph{Completed}
 \begin{itemize}
   \item 
     Expand on candidate list of quantitative objectives for the Swarm staking system.
@@ -53,16 +52,17 @@ In particular, we considered how to incorporate two proposed adjustments to the 
     %
     Use solutions to the deterministic model to back out results that hold in expectation.
 
-  \item Study staker decision processes without the assumptions of determinism.
-  \end{itemize}
+  \item Study staker decision processes and risks without the assumptions of determinism.
+
+  \item Introduce model parameters to incorporate generalisations, including those expressed in SWIPs 19 and 20.
+\end{itemize}
 
 \subsection*{Future milestones}
 \begin{itemize}  
   \item Study staker decision processes without the assumptions of complete information or stationarity.
-  \item Further rounds of feedback on the proposed objectives the staking system design.
-  \item Pull data on historic staker behaviour and analyse it in the context of our model. Are there any stakers that already exhibit strategic behaviour? Create visualisations.
+  \item Pull data on historic staker behaviour and analyse it in the context of our model. Are there any stakers that already exhibit strategic behaviour? How frequent are instances of direct competition in acquiring stake positions? Create visualisations.
   \item Establish conditions for market clearing at the target replication rate.
-  \item Identify aggregate economic indicators and metrics relevant for monitoring and forecasting Swarm storage performance.
+  \item Identify aggregate economic indicators and metrics relevant for monitoring and forecasting Swarm storage performance and making decisions about improvements.
 \end{itemize}
 
 \subsection*{Revised milestones}
@@ -79,9 +79,9 @@ In particular, we considered how to incorporate two proposed adjustments to the 
 \subsection*{Schedule}
 
 \paragraph{October} 
-Consider alternative state transition functions: withdrawable stake, expiring stake.
-%
 Study aggregate economic indicators and price discovery.
+%
+Study the effect of different model feature choices through the lens of market efficiency.
 %
 Introduce time lag effects. 
 
@@ -111,11 +111,11 @@ Introduce time lag effects.
 
 \subsection*{Objectives of the NO incentive system design}
 
-On discussion with the client, we revised and clarified our approach to defining system design objectives.
+We revised and clarified our approach to defining system design objectives.
 
 \subsubsection*{Incentivise provision of the storage service}
 
-The most fundamental objective of the NO incentive system is to incentivise providing storage. 
+The most fundamental objective of the NO incentive system is to incentivise providing storage.\footnote{We thank Viktor Tr\`on for pointing this out.}
 %
 A simple quantitative interpretation of this objective is as follows: each epoch, Swarm offers an amount of revenue $R_t$ in exchange for the provision of $K_t$ bytes of storage capacity.
 %
@@ -127,15 +127,15 @@ Conversely, if storage is overprovisioned, it manifests as a replication rate ov
 
 \subsubsection*{Competitiveness, decentralisation, and efficiency}
 
-We've talked before about things like ``low returns to operator scale'' and ``cost of entry.'' We posit that the underlying intuition behind these objectives is one of \emph{decentralisation} or \emph{competitiveness}.
+We posit that the criteria ``low returns to operator scale'' and ``cost of entry'' are explained by underlying objectives of \emph{decentralisation} or \emph{competitiveness}.
 %
-Roughly speaking, the intention here is that the NO market should not be susceptible to monopolistic or oligopolistic market structure.
+The intention is that the NO market should not be susceptible to monopolistic or oligopolistic market structure where some participants acquire market power.
 
 Decentralisation can be assessed in the present by calculating a measure of decentralisation such as the Shannon entropy or Herfindahl-Hirschman index (a.k.a.~$L^2$-norm).
 %
 For example, if the ideal stake distribution in any neighbourhood is evenly weighted among 4 nodes, then the target entropy is $\log(4)=2$ bits.
 
-We can also use our models to assess the \emph{propensity} of the system to become centralised in the future.
+We can also use our models to assess the propensity of the system to become centralised in the future.
 %
 Here are some of the model features we have studied, interpreted in this light:
 \begin{enumerate}
@@ -148,7 +148,7 @@ We also considered the tradeoff between decentralisation and \emph{efficiency}.
 %
 Roughly speaking, the Swarm Protocol is efficient if lower average NO costs result in lower prices for consumers.
 %
-A criterion of efficiency is that NOs with lower operating costs can achieve a larger market share; this criterion competes with that of dispersion of the operating cost distribution.
+A criterion of efficiency is that NOs with lower operating costs can achieve a larger market share; this criterion competes with that of decentralisation.
 
 \begin{comment}
 \subsubsection*{List of objectives}
@@ -171,15 +171,15 @@ Here are the revised candidate objectives for the NO incentive system:
 
 \subsection*{Risk parameters}
 
-Risk management is a cost of doing business.
-%
-Since smaller operators are typically both more exposed to risk and less able to accurately estimate it, they bear a disproportionate cost in accounting for risk, hence limiting their potential productivity.
-%
-Thus quantifying the effects of NO and network scaling on risk helps us understand the tradeoff between decentralisation and efficiency of the market as a whole.
-
 Risk comes into play through all random or unknown elements of the model: total network revenue, operating costs, the lottery determining who receives the payout in each epoch, and the unknown incentive functions and strategies of other NOs.
 %
 This month we focused on the best-controlled source of risk: the redistribution lottery.
+
+Risk management is a cost of doing business that factors into agents' operating cost $O$.
+%
+Since smaller operators are typically both more exposed to risk and less able to accurately estimate it, they bear a disproportionate cost in accounting for risk which hampers their productivity.
+%
+Thus quantifying the effects of NO and network scaling on risk helps us understand the tradeoff between decentralisation and efficiency of the market as a whole.
 
 \begin{comment}
 \subsubsection*{Redistribution lottery structure}
@@ -195,11 +195,11 @@ The random approach saves on computational costs by reducing the number of trans
 On the other hand, it introduces a risk of drawdowns and bankruptcy that especially affects smaller scale NOs, who may experience long strings of epochs without receiving any payout.
 \end{comment}
 
-\subsubsection*{Ruin probabilities}
+\paragraph{Model}
 
-Consider a model where an NO starts with initial operating cash $C_0$ and has constant per epoch operating cost $O>0$.
+We studied a model where an NO starts with initial operating cash $C_0$ and has constant per epoch operating cost $O>0$.
 %
-Assume that share distribution is fixed and the per epoch network revenue is a constant $R>0$.
+We assumed share distribution is fixed and the per epoch network revenue is a constant $R>0$.
 %
 Each epoch, our target NO receives $R$ with probability $p\in[0,1]$; if there are $2^D$ neighbourhoods and he holds a share weight $0<w\leq 1$ in his neighbourhood, then $p=2^{-D}w$.
 %
@@ -209,25 +209,24 @@ Assuming no cash is withdrawn, the operating cash in epoch $n$ is governed by
 \]
 In particular, it is linear in a binomial random variable $U_n$, and risk parameters can therefore be computed in terms of the binomial distribution.
 
-\begin{itemize}
-  \item A naive first approximation to the risk of ruin is the probability $(1-p)^{\left\lfloor C_0/O \right\rfloor}$ of \emph{never} receiving a single payout before going bust.
+\paragraph{No payout} A naive first approximation to the risk of ruin is the probability $(1-p)^{\left\lfloor C_0/O \right\rfloor}$ of \emph{never} receiving a single payout before going bust.
   %
   This value is a lower bound for the risk of ruin; depending on the relative size of $p$, $C_0/O$, and $R/O$, it may not be very tight.
 
-  \item A widely used risk measure is the value-at-risk at probability $q\in(0,1)$, which is the largest cash reserve level $K$ such that $\mathbb{P}(C_n\geq K)\geq q$, a.k.a.~the quantile function of $K$ evaluated at $q$.
+\paragraph{VaR} A widely used risk measure is the value-at-risk (VaR) at probability $q\in(0,1)$, which is the largest cash reserve level $K$ such that $\mathbb{P}(C_n\geq K)\geq q$, a.k.a.~the quantile function of $K$ evaluated at $q$.
   %
   This can be computed quite efficiently for binomial variables; see the attached notebooks.
   
   VaR does not register larger drawdowns before the end of the period, nor does it track the size of losses that occur if losses do exceed the threshold.
   
-  \item 
+\paragraph{Eventual ruin}
     The true ruin probability $\Prob(T_{\leq 0}<N)$, where $N\in\N\cup\{\infty\}$ is the investment horizon and $T_{\leq 0}\in\N$ is the first epoch $t$ at which $C_t\leq 0$, is of course more complicated to compute.
     %
     As the number of sample paths scales like $2^N$, a brute force approach soon draws out of reach as $N$ increases.
 
-    In the discrete setting, the \emph{hitting time theorem} gives us a route to an exact form.
+    In the discrete setting, the hitting time theorem gives us a route to an exact form.
     %
-    To achieve this, rescale the unit of account so that $O=1$ and assume that $R$ and $C_0$ are exact integer multiples of $O$; though artificial, this adjustment is harmless when $O\ll C_0,R$.
+    To achieve this, rescale the unit of account so that $O=1$ and assume that $R$ and $C_0$ are exact integer multiples of $O$.\footnote{Though artificial, this adjustment is harmless when $O\ll C_0,R$.}
     %
     Then $C_n$ is a left continuous random walk with step size $RX - 1$, where $X\sim\mathrm{Bernoulli}(p)$, and the hitting time theorem gives us
     \[
@@ -237,8 +236,7 @@ In particular, it is linear in a binomial random variable $U_n$, and risk parame
     %
     Alternatively, the RHS can be computed directly quite quickly using a computer.    
 
-\end{itemize}
-
+\
 
 Empirically, with $C_0$ set to three months of operating costs and a network depth of $D=11$, corresponding to a total network storage capacity of $32$TiB, the probability of ruin in finite time for a small operator with 1 node, resp.~16 nodes, is at least $77.36\%$, resp.~$5.07\%$.
     
@@ -250,7 +248,7 @@ On the other hand, the payout in the unlikely case of receiving a reward before 
 
 We explored ways to introduce parameters into the NO incentive mechanism so as to consider both proposed and hitherto unexplored variants on an equal footing.
 
-\subsubsection*{Pricing shares}
+\paragraph{Pricing shares}
 
 A position in the Swarm stake registry can be interpreted as an \emph{equity share} in the neighbourhood that pays dividends on the neighbourhood's future revenue.
 %
@@ -272,11 +270,11 @@ SWIP-20 introduces such a scheme and explicitly names the equity balance as a ne
 %
 Under SWIP-20, $p_t$ is the unit price of storage as provided by the price oracle contract in that epoch.
 
-\subsubsection*{Optionality}
+\paragraph{Optionality}
 
 An \emph{optionality} on a share is an action that the holder can choose to take that ``burns'' it in exchange for some other asset.
 %
-Optionality on shares makes it easier to develop adaptive strategies, and hence generally makes the game more accessible to less sophisticated NOs.
+Optionality on shares makes it easier to develop adaptive strategies, hence makes the game more accessible to less sophisticated NOs.
 
   SWIPs 19 and 20 introduce optionalities on neighbourhood shares. To be precise:
   \begin{itemize}
