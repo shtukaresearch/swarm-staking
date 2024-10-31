@@ -1,0 +1,56 @@
+%%% FONT + LAYOUT %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\documentclass[a4paper,12pt]{article}
+
+\usepackage{microtype}
+\usepackage{libertine}
+\usepackage[english]{babel}   % Spacing and hyphenation rules for English.
+%\usepackage[T1]{fontenc} % ensures that ANSI carets and mid render correctly and are searchable
+
+\usepackage[margin=25mm]{geometry}
+
+\usepackage{calc}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{verbatim}
+
+% title
+\input{common/title}
+
+% maths stuff
+
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+
+
+%%% HYPERLINKS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usepackage[
+  colorlinks=true,
+  urlcolor=olive,
+  linkcolor=teal,
+  citecolor=olive,
+  destlabel=true,
+  bookmarks=true
+]{hyperref}
+
+% Turns cross-references into links by redefining \refstepcounter
+% Turns citations into links by redefining \bibcite
+% Turns amsmath equation numbers into links by unknown wizardry
+% Provides \href{}{}
+
+\usepackage{bookmark} 
+% patches hyperref to simplify processing (no .out file is generated and 
+% only needs 2 runs).
+\usepackage{booktabs}
+\urlstyle{same}
+
+\input{common/amsthm}
+\input{common/macro}
+
+\author{Shtuka research}
+\title{Swarm incentive analysis: October report}
+\begin{document}
+\input{document}
+\end{document}
+
