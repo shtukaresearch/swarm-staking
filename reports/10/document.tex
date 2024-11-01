@@ -84,89 +84,93 @@ For more details, see \textbf{Findings}.
 
 
 
-
-\newpage
 \section*{Findings}
 
 \subsection*{Summary}
 
 \begin{itemize}
-  \item Multi-objective optimisation
-  \item Microeconomic equilibrium
-  \item Efficiency and reallocation events
-  \item Observational studies
+  \item We established that a formal notion of allocative efficiency of equilibria is needed for lower operating costs to be passed on to users as lower prices. We related this efficiency objective to a basic objective of maximising demand.
+  \item The current implementation of Swarm network allows neighbourhoods to reach a state from which an allocatively efficient equilibrium can never be reached, given that new NOs with lower costs enter the game.
+  %
+  In order to address this problem, new ways for stake to be reallocated --- either by trading or liquidation --- should be introduced.
+  \item We retrieved \code{StakeUpdated} events, grouped them together into 10 bit neighbourhoods, and searched for an appropriately defined notion of `competitive' behaviour.
+  %
+  While we did observe activity that could be evidence of competition, in all cases there were also other plausible explanations, such as the split into 11 bit neighbourhoods.
 \end{itemize}
 
-\subsection*{Microeconomic equilibrium }
+\subsection*{Price optimisation}
 
 We revised and clarified our approach to defining system design objectives, identifying specific objective functions and studying their implementation through a mechanism design approach.
-%
-The key objective functions under study this month were:
+
+The key objective functions under study this month were the dual optimisation problems:
 \begin{enumerate}
-  \item Maximise sales (growth) subject to QoS constraints;
   \item Minimise storage price subject to QoS constraints;
   \item Maximise QoS at a given price.
 \end{enumerate}
-For the third criterion, we evaluate QoS purely in terms of replication rate, which the design of the Swarm protocol calls for having a target value of $4$.\footnote{Presumably, if a strictly higher replication rate can be provided for the same or lower price, this would also be fine.}
+%
+We evaluate QoS purely in terms of replication rate.
+%
+The design of the Swarm protocol calls for this to have a target value of $4$; but presumably, if a strictly higher replication rate can be provided for the same or lower price, this would also be fine.
+%
+Note that if the Swarm storage service is an ordinary good, objective (1) is equivalent to maximisation of the quantity demanded subject to the QoS constraint.
 
-If we write $\mathcal{D}=\uR$ for demand space, $\mathcal{P}=\uR$ for price space, and $\mathcal{Q}=\uR$ for QoS (replication rate) space, then the Swarm protocol rules and exogenous world state determines a set of feasible allocations
+\paragraph{Production model}
+Let us fix a demand quantity $D>0$ and allow excess supply to be absorbed as higher replication rate.
+%
+If we write $\mathcal{P}=\uR$ for price space, and $\mathcal{Q}=\uR$ for QoS (replication rate) space, then the Swarm protocol rules and exogenous world state determines a set of \emph{feasible production profiles}
 %
 \[
-  X \subset \mathcal{D}\times\mathcal{P}\times\mathcal{Q}.
+  X \subset \mathcal{P}\times\mathcal{Q}
 \]
 %
-Here, a point $(D,p,q)$ is \emph{feasible} if the realised revenue $R=pD$ can be distributed among a population of storage providers \emph{in some way} such that they would collectively be prepared to meet the demand $D$ with replication rate $q$, i.e.~provide $pD$ units of storage.
+for each quantity $D$.
+%
+A point $(p,q)$ is feasible if the network revenue $R=pD$ can be distributed among a population of storage providers \emph{in some way} such that they would collectively be prepared to meet the demand $D$ with replication rate $q$, i.e.~provide $qD$ units of storage.
 %
 The means by which this distribution is achieved is within the purview of the Swarm protocol designers.
 
-Classical demand theory tells us that for any $q\in \mathcal{Q}$, the feasible slice 
+The price optimisation problem is to find the feasible production profile $(p^*,q)$ with minimal $p$ given $q$.
+%
+To transform this into the dual problem of optimising $q$ given $p$, look for a selection rule 
 \[
-  X_q = X \cap (\mathcal{D}\times\mathcal{P}\times\{q\})
+  q^*:\mathcal{P}\rightarrow X\cup\{\bot\}
 \]
-is a downward-sloping curve in the positive quadrant $\uR^2$.
+that assigns a feasible production profile $q^*(p)=(p,q^*)\in X\cap (\{p\}\times\mathcal{Q})$ that maximises $q^*$.
 %
-That is, the storage price is minimised within the feasible region if and only if demand is maximised.
+By the law of supply, $q^*(p)$ is increasing in $p$.\footnote{See (Mas-Collel, 1995), Chapter 5.}
+%
+It follows that a Pareto efficient, price-minimising production profile is obtained by finding the minimal $p$ such that $q^*(p)\geq 4$.
 
-To transform this optimisation problem into one parametrised over price, where $q$ may vary, we look for a selection rule 
+\paragraph{Redistribution mechanisms}
+Whether or not a price-optimal feasible production profile is actually implementable depends on the details of how revenue $pD$ is redistributed among storage providers and their individual production costs.
+%
+That is, it depends on the choice of a budget-balanced redistribution \emph{mechanism}
 \[
-  \xi^*:\mathcal{P}\rightarrow X\cup\{\bot\}
+  \mathbf{M}:\uR \times \State \rightarrow \uR^\Overlay,
 \]
-that assigns a feasible state $\xi^*(p)=(D^*,p,q^*)\in X\cap \mathcal{D}\times\{p\}\times\mathcal{Q}$ such that $q^*$ is maximal in $X\cap \mathcal{D}\times\{p\}\times\mathcal{Q}$.
-%
-Classical supply theory tells us that $q^*(p)$ is \emph{increasing} in $p$. 
-%
-Then the price objective can be achieved by finding the minimal $p$ such that $q^*(p)\geq 4$; if $q^*$ is strictly increasing in $p$, continuous, and $q^*(0)=0$, then this minimum achieves the target rate $q^*=4$.
+that determines the amount $r_a=\mathbf{M}(R,\xi)_a$ each address $a\in\Overlay$ receives based on the total revenue $R\in\uR$ and some internal state vector $\xi\in\State$ that controls the redistribution, together with a (Bayes-Nash) equilibrium $\xi^*(R)\in\State$.
 
-\paragraph{Implementing the optimal allocation}
-The mechanism design approach to economic management tells us to search for a \emph{redistribution mechanism} 
-\[
-  \mathbf{M}:\uR \times \Xi \rightarrow \uR^\Overlay
-\]
-together with a (Bayes-Nash) equilibrium $\xi^*(R)\in\Xi$.
-%
-where $\uR$ is revenue space, $\Xi$ is some endogenous state space, and $\Overlay$ is the address space of NOs.
-%
-We require that $\sum\mathbf{M}(R,\xi)\leq R$, that is, the mechanism is within budget.
-
-The endogenous state space can take several forms, but we ask that it at least record whether each node is \emph{active} via a map $\mathtt{on}:\Xi\rightarrow \{\bot,\top\}^\Overlay$.
+The internal state space $\State$ can take several forms, but we ask that it at least record whether each node is \emph{active} via a map $\mathtt{state}:\State\times\Overlay\rightarrow \{\mathtt{off},\mathtt{on}\}$.
 %
 Then we can define the \emph{replication rate} of the equilibrium $\xi^*$ by the formula
 \[
-  q(\xi^*) = \sum\mathtt{on}(\xi^*);
+  q(\xi^*) = \#\{a\in\Overlay \mid \mathtt{state}(\xi^*,a)=\mathtt{on}\}.
 \]
-say also that $(\mathbf{M},\xi^*)$ \emph{implements} $q$.
+In this case, we say that $(\mathbf{M},\xi^*)$ \emph{implements} $q$.
+%
+We want to find redistribution mechanisms $(\mathbf{M},\xi^*)$ that implement $q^*(p)$, or as close to it as possible, for each price $p$.
 
-\begin{example*}In the version of the Swarm mechanism under consideration, the endogenous state vector $\xi^*$ consists of a mapping $(\mathtt{on},x):\Overlay\rightarrow \{\bot,\top\}\times\uR$ that identifies whether a node is active and what their equity balance is.
+\begin{example*}In the version of the Swarm mechanism under consideration, the endogenous state vector $\xi^*$ consists of a mapping $(\mathtt{state},x):\Overlay\rightarrow \{\mathtt{off},\mathtt{on}\}\times\uR$ that identifies whether a node is active and what their equity balance is.
 \end{example*}
 
 \paragraph{Identifying an optimal allocation}
 Suppose we have access to the variable costs $O:\Overlay\rightarrow\uR$ of each NO, that is, the cost of providing a single active node.
 %
-For simplicity, we assume that $O$ does not depend on the quantity of storage provided; this is not as ridiculous as it sounds if we assume that NOs must reserve a certain amount of computation to run their node, regardless of how full the reserve is, and that realised demand does not stray past a power of two, triggering a neighbourhood split.
+For simplicity, we assume that $O$ does not depend on the quantity of storage provided.\footnote{This is not as ridiculous as it sounds if we assume that NOs must reserve a certain amount of computation to run their node, regardless of how full the reserve is, and that realised demand does not stray past a power of two, triggering a neighbourhood split.}
 %
-Finally, we assume that $\Overlay\subseteq\N$ is well-ordered and that $O(a)$ is increasing in $a$, i.e.~the node addresses are sorted in order of increasing operating cost.
+Assume also that $\Overlay=\{0,\ldots,N\}$ is integer indexed and that $O(a)$ is increasing in $a$, i.e.~the node addresses are sorted in order of increasing operating cost.
 
-The following result is not hard to prove:
+It is not hard to show that it is QoS-optimal to allocate revenue share to the $K$ nodes with the lowest costs, where $K$ is chosen as large as possible.
 %
 \begin{proposition*}
   Under the above assumptions, let $K\in\Overlay$ be the maximum index such that
@@ -185,40 +189,63 @@ The following result is not hard to prove:
 
 The Swarm protocol does not have direct access to the quantities $O(a)$, so the preceding mechanism cannot be implemented as stated.
 %
-Instead, Swarm needs to provide some kind of market where would-be NOs can express their costs indirectly through market positioning.
+Instead, we must rely on the laws of competition to induce rellocation of market share to the NOs with lowest costs.
 
 \paragraph{Does the Swarm redistribution mechanism implement $(p^*(4),4)$?}
 
-No, it does not.
+Due to the phenomenon of investment saturation we identified in August --- where stake positions become dilute enough that any newly issued share is worth less than its price --- there are plausible initial conditions where all issued shares end up permanently associated with a single entity.
+%
+In other words, no matter how much lower are the costs of prospective new entrants than the incumbent, there is no incentive-compatible way for equity to be transferred to the new entrants and hence achieve a QoS-optimal allocation.
 
-\newpage
+\begin{proposition*}
+  Let $i$ be an NO with cost $O_i$. 
+  %
+  Suppose that $i$ has an exclusive first-move opportunity to acquire shares in an as-yet unoccupied neighbourhood.
+  %
+  For all sufficiently low cost-revenue ratios $O_i/R$, there exists a position $s$ that $i$ may acquire such that:
+  \begin{enumerate}
+    \item for all NO populations $O:\Overlay\rightarrow\uR$, there is a time-invariant Nash equilibrium in which no new stake updates are made and $i$ remains the sole stakeholder;
+    \item It is individually rational for $i$ to make the initial investment $s$; i.e.~$i$ earns at least $s$ in total discounted future profit from his investment.
+  \end{enumerate}
+  Moreover, $O_i/R\leq \frac{3-\sqrt{5}}{2}> 0.32$ is sufficiently low.
+\end{proposition*}
+
+It follows that the Swarm redistribution mechanism does not reliably implement $(p^*(q),q)$ for any $q>1$.
+%
+What can we do to address this problem?
+
+\paragraph{Unlocking efficient allocations with free trade}
+If we posit a market in which stake positions can be freely traded at any price, then unsurprisingly we find that the feasible trades generally result in transfers of stake from NOs with higher costs to those with lower costs, improving efficiency.
+%
+Thus in order for Swarm's equity allocation to reliably reach QoS-optimal equilibria, it is sufficient to allow stake positions to be transferred and traded under arbitrary market structures.
+%
+However, this is not the only way to achieve this: for example, it is also sufficient to allow stake to be liquidated so that it may then be reissued to another party with a higher valuation for the position.
+
 \subsection*{Observational studies}
 
-Are NOs behaving competitively in the staking game?
-%
-
-Significant dates:
-\begin{itemize}
-  \item September 21st, 2023. Bee node version 1.17.4 drops, introducing the \texttt{--target-neighborhood} option.
-  \item October--November, 2023. Over 16,000 new active nodes appear in China, quintupling the total number of active nodes in the network. Half of these become inactive after November.
-  \item May 2024. 11-bit replication neighbourhoods become common.
-\end{itemize}
+To establish whether any NOs are already behaving competitively, we gathered logs associated to \code{StakeUpdated} events emitted by the Stake Registry contract, grouped them into bins by overlay address prefix, and searched for examples of `reactive' update behaviour.
 
 \paragraph{Observation period}
-We drew observations from the deployment of v0.4.0 of the stake registry contract in block 25,527,075 until its pausing in block 35,963,617.\footnote{It might make sense to cut things off at the slightly earlier time of block 35,961,749, when version 0.9.1 of the stake registry contract incorporating rules from SWIP-19 and SWIP-20 was deployed, but since the difference was just 2 hours and 20 minutes, we ignore this.} This represents about 2 years of network activity
+We drew observations from the deployment of v0.4.0 of the stake registry contract in block 25,527,075 until its pausing in block 35,963,617.\footnote{It might make sense to cut things off at the slightly earlier time of block 35,961,749, when version 0.9.1 of the stake registry contract incorporating rules from SWIP-19 and SWIP-20 was deployed, but since the difference was just 2 hours and 20 minutes, we ignore this.} This represents about 2 years of network activity.
 
 We noticed substantial staking activity among new overlay addresses in October and November of 2023, presumably an impact of the thousands of new active nodes that reportedly appeared in China during this period.\footnote{\url{https://blog.ethswarm.org/foundation/2024/state-of-the-network-january/}}
 %
-We sampled this outlier event out of the data by only considering blocks starting at 31,000,000, around mid-November, by which time the main cluster of updates was complete.
+We cropped this exceptional period out of the data by only considering blocks starting at 31,000,000, around mid-November, by which time the main cluster of updates was complete.
 
 \paragraph{Binning} We gathered addresses into neighbourhoods assuming that the bit depth is 10.
+%
+However, it is known that nodes began organising themselves into bins with 11 bit addresses in May 2024.
+%
+The reader should bear in mind that pairs of adjacent 11-bit bins appear merged in our processed data.
 
 \paragraph{Summary statistics}
 All 1024 bins in the 10-bit address space saw events during the observation period.
 %
-In total, 5360 overlay addresses were observed.
+In total we observed 5360 overlay addresses referenced in 6183 events. 
+%
+Further summary statistics are gathered in Table \ref{event-statistics}.
 
-\begin{table}
+\begin{table} 
   \hfill
   \begin{tabular}{cc}
     \multicolumn{2}{l}{Addresses per bin} \\
@@ -226,37 +253,37 @@ In total, 5360 overlay addresses were observed.
     mean      & 5.23 \\
     $\sigma$  & 7.84 \\
     max       & 178 \\
-    min       & 1  \\
     \bottomrule
   \end{tabular}
   \hfill
   \begin{tabular}{cc}
     \multicolumn{2}{l}{Events per bin} \\
-    \midrule 
+    \toprule 
     mean      & 6.04 \\
     $\sigma$  & 7.96 \\
     max       & 178 \\
-    min       & 1 \\
     \bottomrule
   \end{tabular}
   \hfill
   \begin{tabular}{cc}
-    \toprule
     \multicolumn{2}{l}{Events per address}\\
-    \midrule
+    \toprule
     mean      & 1.15 \\
     $\sigma$  & 0.55 \\
-    max       & 8\footnote{Achieved at address {\tiny\texttt{0x720c3...8736}}}  \\
+    max       & 8  \\
     \bottomrule
   \end{tabular}
   \hfill
   %
   \caption{
     Statistics of events and addresses
-  }  
+  }
+  \label{event-statistics}
 \end{table}
 
-The maximum number of events per bin (resp.~per address) was achieved on bin \texttt{0b0011001010} (resp.~address {\tiny\texttt{0x720c3...8736}}).
+The maximum number $178$ of events per bin occurred in bin \code{0b0011001010}.
+%
+The most active address, with $8$ events, was \code{0x720c3...8736}.
 
 \paragraph{Contested neighbourhoods}
 We define a bin to be:
@@ -264,37 +291,41 @@ We define a bin to be:
   \item \emph{weakly contested} if it has more stake update events than addresses in the observation period;
   \item \emph{contested} if it contains at least one stake update event that \emph{revisits} its address in the sense that its address was observed in a previous event, but not the previous event.
 \end{enumerate}
-The ``definition of contested'' is intended to capture a dynamic of at least two addresses cycling back and forth topping up their equity accounts; the implicit assumption being that such behaviour is \emph{reactive} and hence strategic.
+The definition of ``contested'' is intended to capture a dynamic of multiple addresses cycling back and forth topping up their equity accounts.
+%
+Reactive, hence strategic, behaviour would appear in this way.
 
 We found 395 weakly contested bins and 149 contested bins. 
 %
-The stake update events in the first (lexicographically ordered) 54 contested bins are displayed in the plot below.
-
-
-\begin{center}
+The stake update events in the first (lexicographically ordered) 54 contested bins are displayed in Figure \ref{event-plot}.
+%
 \begin{figure}[p]
+  \centering
   \includegraphics[width=\textwidth]{common/contested.eps}
-  \caption{Stake update events in contested neighbourhoods}
+  \caption{Stake update events in `contested' neighbourhoods}
   \label{event-plot}
 \end{figure}
-\end{center}
-
 
 On many of the plots we can observe pairs of addresses that repeatedly top up at very similar times to one another.
 %
-For example, check this out from the {\texttt{0x6c8}} bin (the eighth plot in Figure \ref{event-plot}):
+We reproduce an example listing in Table \ref{event-listing}.
 %
-\begin{center}
-\begin{tabular}{lll}
-Date + time         & Address & Amount (BZZ) \\
-\hline
-2023-11-21 19:40:00 & 0x6c83 &   11 \\
-2024-07-23 22:15:50 &	0x6c9e  &	10 \\
-2024-07-23 22:16:05 &	0x6cb8  &	10 \\
-2024-08-04 21:56:25 &	0x6c9e  &	10 \\
-2024-08-04 21:56:45 &	0x6cb8  &	10
-\end{tabular}
-\end{center}
+\begin{table}
+  \centering
+  \begin{tabular}{llr}
+    \toprule
+    Date + time         & Address & Amount (BZZ) \\
+    \midrule
+    2023-11-21 19:40:00 & 0x6c83 &   11 \\
+    2024-07-23 22:15:50 &	0x6c9e  &	10 \\
+    2024-07-23 22:16:05 &	0x6cb8  &	10 \\
+    2024-08-04 21:56:25 &	0x6c9e  &	10 \\
+    2024-08-04 21:56:45 &	0x6cb8  &	10 \\
+    \bottomrule
+  \end{tabular}
+  \caption{Event listing from in bin \code{0x6c8} --- cf.~the eighth plot in Figure \ref{event-plot}}
+  \label{event-listing}
+\end{table}
 %
 We posit that the most likely reason for this behaviour is that the same entity started numerous nodes at the same time and placed them in distinct 11-bit neighbourhoods.
 %
