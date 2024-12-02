@@ -963,7 +963,7 @@ We have not ruled out the possibility of $b$ diluting $a$ to less than the negat
 
 \begin{itemize}
   \item
-    Risk is the chance of adverse events or outcomes that affect the agent's ability to continue operations (e.g.~because of bankruptcy or loss of confidence).
+    A risk model assesses the chance of adverse events or outcomes that affect the agent's ability to continue operations (e.g.~because of bankruptcy or loss of confidence).
   \item
     Sources of risk are found in all random or unknown elements of the model: total network revenue, operating costs, the lottery determining who receives the payout in each epoch, and the unknown incentive functions and strategies of other NOs.
   \item
@@ -989,13 +989,13 @@ We'll focus on tail event risk.
 
 \subsubsection{Lottery model}
 
-In the Swarm protocol today, payouts occur each round to a single active node.
+In the Swarm protocol today, payouts occur each round to a single active node, selected at random.
 %
 The probability that a given node receives the payout is controlled by the number of bins and the node's equity share within the target bin.
 %
-This saves on computational costs by reducing the number of transfers that must be made in each epoch.
+This lottery approach saves on computational costs by reducing the number of transfers that must be made in each epoch.
 %
-However, it also introduces a risk of long drawdowns and bankruptcy that particularly affects smaller scale NOs, who may experience long strings of epochs without receiving any payout.
+However, it also introduces a risk of long drawdowns and bankruptcy that disproportionally affects smaller scale NOs, who may experience long strings of epochs without receiving any payout.
 
 We studied a model where an NO starts with initial operating cash $C_0$ and has constant per epoch operating cost $O>0$.
 %
@@ -1034,18 +1034,14 @@ Ruin occurs when we hit $C_T < 0$, i.e.~not enough cash is available to continue
 
 If we assume constant $O_t$, passive staking (so $x_t = 0$), and i.i.d.~$y_t$ and $R_t$, the process $C_T$ is a random walk with increment $R_t\cdot w_i(x_{\leq t}) - y_t$, and results about hitting times of random walks apply.
 
-
-\paragraph{No payout} A naive first approximation to the risk of ruin is the probability $(1-p)^{\left\lfloor C_0/O \right\rfloor}$ of \emph{never} receiving a single payout before going bust.
+\begin{example}
+  
+  A naive first approximation to the risk of ruin is the probability $(1-p)^{\left\lfloor C_0/O \right\rfloor}$ of \emph{never} receiving a single payout before going bust.
   %
   This value is a lower bound for the risk of ruin; depending on the relative size of $p$, $C_0/O$, and $R/O$, it may not be very tight.
+  
+\end{example}
 
-\paragraph{VaR} A widely used risk measure is the value-at-risk (VaR) at probability $q\in(0,1)$, which is the largest cash reserve level $K$ such that $\mathbb{P}(C_n\geq K)\geq q$, a.k.a.~the quantile function of $K$ evaluated at $q$.
-  %
-  This can be computed quite efficiently for binomial variables; see the attached notebooks.
-  
-  VaR does not register larger drawdowns before the end of the period, nor does it track the size of losses that occur if losses do exceed the threshold.
-  
-\paragraph{Eventual ruin}
     The true ruin probability $\Prob(T_{\leq 0}<N)$, where $N\in\N\cup\{\infty\}$ is the investment horizon and $T_{\leq 0}\in\N$ is the first epoch $t$ at which $C_t\leq 0$, is of course more complicated to compute.
     %
     As the number of sample paths scales like $2^N$, a brute force approach soon draws out of reach as $N$ increases.
@@ -1063,11 +1059,93 @@ If we assume constant $O_t$, passive staking (so $x_t = 0$), and i.i.d.~$y_t$ an
     \[
       \Prob(T_0 = n) = \frac{C_0}{n}\Prob(C_n = 0).
     \]
-    Summing up over all $n$ and $C_0$, we may compute the generating function of these numbers using the elementary formula $\Expectation[z^{U_n}] = ((1-p) + pz)^n$ for the PGF of the binomial distribution, from which can be extracted closed forms for the ruin probabilities.
-    %
-    Alternatively, the RHS can be computed directly quite quickly using a computer.    
+Summing up over all $n$ and $C_0$, we may compute the generating function of these numbers using the elementary formula $\Expectation[z^{U_n}] = ((1-p) + pz)^n$ for the PGF of the binomial distribution, from which can be extracted closed forms for the ruin probabilities.
+%
+Alternatively, the RHS can be computed directly quite quickly using a computer.    
 
-\
+    
+\begin{lemma}
+
+  $\sum_{n=N}^\infty { n\choose k } x^n = {k+N \choose k} \frac{x^N}{(1-x)^{N+k+1}}$
+
+\end{lemma}
+
+Summing over all integer hitting times and starting capital, we find
+\begin{align*}
+  \sum_{k=1}^\infty\sum_{n\in\N} \Prob[T_0 = n\mid C_0=k]u^k &= \sum_{k\in\N}\sum_{n\in\N} \frac{k}{n} \Prob[C_n = 0\mid C_0=k]u^k 
+\end{align*}
+\begin{align*}
+  &= \sum_{k\in\N}\sum_{n\in\N} \frac{k}{n} \Prob[k - n + R\tilde{U}_n = 0]u^k \\
+  &= \sum_{\ell\in\N}\sum_{n=\ell R}^\infty \frac{n-\ell R}{n} \Prob[\tilde{U}_n = \ell]u^{n-\ell R}   \qquad (k=n-\ell R)\\
+  &= \sum_{\ell\in\N} \left( \frac{p}{qu^R} \right)^\ell \sum_{n=\ell R}^\infty \left[ 
+    {n\choose \ell} - R \frac{\ell}{n} {n\choose \ell} 
+  \right](uq)^n \\
+  &= \sum_{\ell\in\N} \left( \frac{p}{qu^R} \right)^\ell 
+  \left( 
+    \sum_{n=\ell R}^\infty {n\choose \ell} (uq)^n - 
+    Ruq \sum_{n=\ell R - 1}^\infty {n\choose \ell-1} (uq)^n
+  \right) \\
+  &= \sum_{\ell\in\N} \left( 
+    \frac{p}{qu^R} 
+  \right)^\ell 
+  \left(
+    {\ell(R+1) \choose \ell} \frac{ (uq)^{\ell R} } {(1-uq)^{\ell(R+1)+1} } - 
+    Ruq {\ell(R+1)-2 \choose \ell - 1} \frac { (uq)^{\ell R-1} } { (1-uq)^{\ell(R+1) -1} }
+  \right) \\
+  &= \sum_{\ell\in\N} \left( 
+    \frac{p(uq)^R}{qu^R(1-uq)^{R+1}} 
+  \right)^\ell 
+  \left(
+    {\ell(R+1) \choose \ell} (1-uq)^{-1} - 
+    R {\ell(R+1)-2 \choose \ell - 1} (1-uq)
+  \right)  \\
+  &= \sum_{\ell\in\N} \left( 
+    \frac{pq^{R-1}}{(1-uq)^{R+1}} 
+  \right)^\ell 
+  \left(
+    {\ell(R+1) \choose \ell} (1-uq)^{-1} - 
+    R {\ell(R+1)-2 \choose \ell - 1} (1-uq)
+  \right)
+\end{align*}
+%
+We don't know a closed form for this $\sum_\ell { k\ell \choose \ell }x^\ell $ for general $k>2$, but for $k=2$ these are the central binomial coefficients, so we can study this in closed form (although this case $R=1$ is not very important in practice).
+%
+\begin{align*}
+  &= \sum_{\ell\in\N} \left( 
+    \frac{p}{(1-uq)^{2}} 
+  \right)^\ell 
+  \left(
+    {2\ell \choose \ell} (1-uq)^{-1} - 
+    R {2(\ell-1) \choose \ell - 1} (1-uq)
+  \right) \\
+  &= \sum_{\ell\in\N} \left( 
+    \frac{p}{(1-uq)^{2}} 
+  \right)^\ell 
+  \left(
+    {2\ell \choose \ell} \frac{1-Rp}{1-uq}
+  \right) \\
+  &= \frac{1-Rp}{1-uq}\left(
+    1 - 4\cdot \frac{p}{(1-uq)^{2}}
+  \right)^{-\frac{1}{2}} 
+\end{align*}
+
+To solve for the eventual ruin probability, we need to specialise to fixed $k>0$ and sum over $n\in\N$.
+%
+We can extract this from the generating function by applying $\frac{\partial^k}{k!\partial u^k}$ and evaluating at $u=0,v=1$.
+%
+First setting $v=1$,
+%\begin{align*}
+%  \sum_{k\in\N}\sum_{n\in\N} \Prob[T_0 = n\mid C_0=k]u^k &= \left( 1- \frac{pu^{-R}}{(1-p)(1-u(1-p))} \right)^{-1}((1-u(1-p))^{-1}-R) 
+%\end{align*}
+%Then applying the $k$th derivative, we get
+
+
+%?
+%\[
+%  \Prob(T_0 <\infty\mid C_0=k) = (1-p)^{-k}(p^{-1}-R)
+%\]
+
+\begin{example}[Some calculations]
 
 Empirically, with $C_0$ set to three months of operating costs and a network depth of $D=11$, corresponding to a total network storage capacity of $32$TiB, the probability of ruin in finite time for a small operator with 1 node, resp.~16 nodes, is at least $77.36\%$, resp.~$5.07\%$.
     
@@ -1075,9 +1153,13 @@ With the full network at exabyte scale ($D=26$) and per node revenue conditions 
 %
 On the other hand, the payout in the unlikely case of receiving a reward before the cash reserve runs out is so large that ruin cannot occur again for 437 years.\footnote{These numbers were produced using mildly hacked prices of AWS EC2 instances, the current Swarm network reward pot as reported on \url{https://www.ethswarm.org/get-bzz}, and a plausible BZZ/USD price.}
 
-\subsection{Equity}
+\end{example}
 
-In this section, we attempt to price equity and investigate dynamics if equity were freely tradable.
+\subsection{Tokenisation}
+
+Currently, stake positions can only be bought or sold by handing over private keys, which is illiquid (only the full equity position of an address can be sold as a single unit) and fraught with difficulties.
+%
+In this section, we establish what trades would occur if equity positions were tokenised and freely tradable.
 
 \begin{itemize}
 
