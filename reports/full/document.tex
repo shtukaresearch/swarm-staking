@@ -4,30 +4,95 @@
 
 This is the full report.
 
-\subsection{Overview of the Swarm system}
+\subsection{Goals}
 
-The Swarm mechanism is defined in \cite{book-of-swarm}.
+The goals of this study were as follows:
+\begin{enumerate}
+  \item Establish a set of quantitative objectives for the Swarm revenue share allocation system.
+  \item Evaluate to what extend the revenue sharing mechanism facilitates or impedes these objectives.
+  \item Where suboptimal, propose alternative approaches or avenues of investigation that could improve the situation.
+\end{enumerate}
+Intermediate and side objectives were among the following:
+\begin{enumerate}
+  \item Describe plausible strategies in the revenue share acquisition game. Try to discover `bad' equilibria.
+  \item Establish a market clearing model that includes a `quality' parameter tracking replication rate.
+  \item Describe and evaluate alternative revenue sharing models.
+\end{enumerate}
 
-The mechanism underlying the Swarm protocol can be understood as comprising three sets of agents exchanging financial instruments:
-\begin{itemize}
-  \item Users, a.k.a.~storage clients;
-  \item The Swarm system, comprising (a) its set of smart contracts (deployed on Gnosis Chain) and (b), the p2p network considered as an opaque blob with which data can be exchanged;
-  \item Node operators, a.k.a.~storage providers.
-\end{itemize}
-Storage clients and storage providers do not trade with one another directly; rather, their trade is mediated by the Swarm system accounts.
+Due to time constraints, we only scratched the surface of the analysis of alternative revenue sharing models.
+
+\subsection{Methodology}
 %
-On the demand side, users buy storage quotas from the \emph{postage stamp} contract via a posted price mechanism. This component of the system is out of scope for our study.
+Our basic approach was to produce a mathematical model of the Swarm economy that incorporates the details of `supply-side controls,' namely, the revenue sharing system.
+%
+We then evaluated our model against a list of general economic objectives of the system.\footnote{The objective functions discussed in the present report are quite different from the list initially reported in August and discussed with V.~Tr\'{o}n.
+%
+This change occurred because we discovered a way to derive the earlier objectives as intermediate targets from more fundamental --- and self-evident --- economic goals like growth and quality of service.}
 
-\subsection{Overview of the Swarm redistribution mechanism}
+More precisely, the logical (if not chronological) progression of our approach goes as follows:
+\begin{enumerate}
 
-\begin{itemize}
-  \item The redistribution mechanism is governed by the Stake Registry and Redistribution contracts.
-  \item The network revenue is calculated by the Price Oracle and Postage contracts at each epoch.
-  %
-  The computation occurs when the Redistribution contract calls into the Postage contract to query the reward pot.
-  %
-  We treat these contracts largely as a black box (but see \S\ref{estimation}).
   \item 
+    Couch the Swarm network economy and its objectives in terms of a general microeconomic production model with objectives of demand, price, and `quality,' with the latter interpreted as replication rate.
+    %
+    As protocol designers, we would like to at least achieve a production vector on the efficient frontier of the production set.
+  
+  \item
+    Introduce the notion of an abstract revenue sharing mechanism as a way to construct the feasible production set.
+    %
+    Efficiency of the resulting production vector then becomes a checkable condition on the revenue sharing mechanism.
+
+  \item
+    Identify an example of an efficient revenue sharing mechanism under idealised conditions.
+
+  \item
+    Describe the Swarm redistribution mechanism as part of a parametrised family (\S\ref{section:model}).
+    %
+    We look for conditions under which this implements an inefficient outcome using an agent-based approach.
+
+  \item
+    Describe the agent policy optimisation problem and establish classes of plausible policies (\S\ref{section:optimal}, \S\ref{section:risk}).
+    %
+    Observe which allocations (and reallocations) can result (\S\ref{section:feasible}).
+
+  \item
+    Discuss approaches to estimating or forecasting the unknown or random parameters in the model (\S\ref{section:estimation}).
+
+\end{enumerate}
+
+\subsection{System overview}
+
+The Swarm Protocol is a decentralised storage service with blockchain-based payments and revenue sharing mechanism.
+%
+It comprises the following components:
+%
+\begin{enumerate}
+  \item A peer-to-peer network of \emph{storage provider} nodes;
+  \item A utility token, BZZ, deployed on an EVM chain (for mainnet Swarm, this chain is Ethereum mainnet);
+  \item A system of 4 smart contracts that sell storage space on the (nodes participating in the) peer to peer network and redistribute the proceeds among the registered nodes.
+\end{enumerate}
+%
+Two types of agents interact with the Swarm Protocol: users, a.k.a.~storage clients, who purchase storage quotas and upload and download data; and node operators (NOs), a.k.a.~storage providers, who provide their storage space and compute storage proofs in exchange for a share of the revenue.
+%
+It is also instructive to consider the Swarm system itself as a third (singleton) type of ``agent'' which intermediates between storage clients and storage providers.
+
+For more details, see \cite{book-of-swarm}.
+
+\subsubsection{Revenue sharing mechanism}
+
+The topic of study of this report is the Swarm Protocol revenue sharing mechanism design and its effect on the overall system design objectives.
+%
+\begin{itemize}
+  \item 
+    The redistribution mechanism is governed by the Stake Registry and Redistribution contracts.
+  \item 
+    The network revenue is calculated by the Price Oracle (which gives the price) and Postage (giving the amount of storage consumed) contracts at each epoch.
+    %
+    The computation occurs when the Redistribution contract, triggered by a call to \code{claim()}, calls into the Postage contract to query the reward pot.
+    %
+    We treat these contracts largely as a black box (but see \S\ref{section:estimation}).
+  
+    \item 
     NOs may purchase \emph{shares} by calling the \code{stakeUpdate} function in the stake registry.
     %
     In the Book of Swarm and related literature, this operation is called \emph{depositing} or \emph{topping up stake}.
@@ -41,11 +106,11 @@ On the demand side, users buy storage quotas from the \emph{postage stamp} contr
     That is, after these changes, each Gnosis chain address is associated to a unique share balance, instead of possibly several keyed by different overlay addresses derived using different nonces.
 
   \item
-    Prior to SWIP-20, shares were priced at a static value $c$.
+    Prior to SWIP-20, shares were priced at a static value $1$.\footnote{Except for integer division problems, the price could be replaced by any constant number without affecting the model.
     %
-    The precise value of $c$ does not matter for the dynamics (except for integer division problems); making $c$ smaller just corresponds to doing a stock split.
+    The convention $p=1$ matches how balances were tracked in the stake registry implementation prior to version 0.9.1.}
     %
-    We adopt the convention $c=1$ PLUR, which matches how balances were tracked in the stake registry implementation (pre SWIP-20).
+    Post SWIP-20, the price is the per-chunk storage price as given by the price oracle for that epoch.
 
   \item
     Nodes are divided up into \emph{replication neighbourhoods} or \emph{bins} according to the first $D$ bits of their overlay address, where $D$ is a number determined locally by the amount of data being stored on the platform.
@@ -57,7 +122,7 @@ On the demand side, users buy storage quotas from the \emph{postage stamp} contr
   \item
     Time is divided into \emph{rounds} or \emph{epochs} of 152 Gnosis chain blocks --- targeting 12 minutes 40 seconds.
     %
-    Each epoch, a bin is selected uniformly at random (using what randomness?).
+    Each epoch, a bin is selected uniformly at random.
     %
     NOs belonging to that bin may participate in the revenue sharing system during that epoch if they satisfy a few additional conditions:
     \begin{enumerate}
@@ -75,16 +140,17 @@ On the demand side, users buy storage quotas from the \emph{postage stamp} contr
     %
     This function randomly selects a node from among those that successfully submitted a commit and reveal in the previous phases, with probability weighted by the share balance of that node.
     %
-    The selected node receives the full network reward for that round.
+    The selected node receives the full network reward for that round, paid out from the Postage contract.
 
   \item
     Network revenue and share prices are both denominated in BZZ tokens.
 
 \end{itemize}
 
-\subsection{Scope}
+\subsubsection{Scope}
+\label{section:scope}
 
-In our study, we focus only on the procurement auction side of the mechanism, which governs the relationship between storage providers and the Swarm system.
+In our study, we focus only on the revenue share redistribution mechanism that governs the relationship between storage providers and the Swarm system.
 %
 The demand-side part of the relationship, governing the relationship between storage clients and the Swarm system, is out of scope.
 
@@ -94,28 +160,10 @@ Our study is based on version 0.8.6 of the storage incentives contracts.
 %
 Since this version only introduced an update to the redistribution contract that is out of scope of the model, our model applies equally well to the versions of contracts deployed at version 0.6.0 (or version 0.4.0 in the case of the stake registry).
 
-\subsection{Assumptions}
-Stationarity, no neighbourhood splits. 
-
-No delays (there ought to be a delay between topping up stake and being able to claim).
-
-We didn't get into considering a lot of different competitive strategies.
-
-\paragraph{Storage service}
-
-On the supply side, node operators (henceforth NOs) provide a fixed service to the system, storing the data chunks delivered into their neighbourhood.
-%
-For simplicity, we hence assume that an NO's decision space surrounding this service is simply a binary: the service is either on or off during any given epoch.
-%
-We also assume that whenever the service is on, the NO remains in consensus with the rest of the neighbourhood; that is, slashing over safety failures is not considered.
-%
-Intermediate strategies, where service is provided only for a subset of chunks, are out of scope.
-
-We assume there is no liveness or safety risk; nodes are inactive if they choose to be, and if they are active, they are always in consensus. (This part isn't actually true in the real Swarm. This means the changes made in the v0.8.6 upgrade of the storage incentives are out of scope for our model.)
 
 \subsection{Recommendations}
 
-\begin{itemize}
+\begin{enumerate}
   \item
     As the network grows into the petabyte range, small NO operations such as a single laptop become unviable because of risk of ruin.
     %
@@ -124,46 +172,21 @@ We assume there is no liveness or safety risk; nodes are inactive if they choose
     The Swarm community should consider what staking pools might look like and whether the core protocol should be changed to either directly support stake pools or facilitate community-led initiatives.
 
   \item
-    We have established that the lack of opportunities to reallocate stake is a barrier to economic efficiency.
+    We have found theoretical aggressive share minting strategies that lead to stagnant stake allocations that are problematic from an efficiency perspective.
     %
-    Swarm should introduce more reallocation opportunities --- in particular, opportunities to exit stake positions --- so that they have an opportunity to undergo real price discovery.
+    Empirically, no one is currently pursuing such strategies, but the situation should be carefully monitored.
 
   \item
-    The Swarm community should consider how it wishes to prioritise the tradeoff between replication rate (and other QoS) targets and growth targets (sales or revenue).
+    The lack of options to reallocate stake is a potential barrier to economic efficiency and hence optimal pricing.
+    %
+    The Swarm Protocol designers should consider introducing more reallocation opportunities so that they have an opportunity to undergo real price discovery.
+    %
+    However, care should be taken to ensure that revenue share does not flow too readily to the the agent with lowest costs, giving it market power.
 
-\end{itemize}
+  \item
+    The Swarm community should consider how it wishes to prioritise the tradeoff between replication rate (and other QoS) targets and growth targets (realised demand and revenue).
 
-\subsection{Notation}
-
-\paragraph{Addresses}
-
-The set of agents is denoted $\Overlay$.
-%
-It can be realised as a set of \emph{overlay addresses}, for example, $\Overlay \cong \mathbb{F}_2^{256}$.
-
-The set of overlay addresses is divided into a set $\Bins$ of \emph{bins}.
-%
-In \cite{book-of-swarm}, these are also called \emph{neighbourhoods}; we prefer the term `bins' because it is shorter and because neighbourhoods can also be of various different sizes.
-%
-We are given a surjective map $\bin:\Overlay\rightarrow\Bins$ that takes an overlay address to the bin to which it belongs.
-%
-The fibre of $\bin$ over a bin $\nu\in\Bins$ is denoted $\Overlay_\nu$.
-
-In deployments, we have $\Bins\cong \mathbb{F}_2^D$ and the function $\bin$ is projection on the first $D$ bits, where $D$ is a network-wide dynamic variable called the \emph{network (log-)radius}.
-%
-For any $\nu\in\Bins$, we can then identify $\Overlay_\nu\simeq\mathbb{F}_2^{256-D}$ by projecting out the first $D$ bits.
-
-
-\paragraph{Balances} Balances are presumed to be non-negative real numbers, i.e.~elements of $\uR := [0,\infty)$.
-
-\paragraph{Summation}
-Fix the following notation for summation over subsets of indices:
-\begin{itemize}
-  \item if $x\in \mathbb{R}^I$ is a vector of finite length, write $\sum:=\sum_I:\R^I\rightarrow\R$ for the sum of the coordinates. On $\uR^I$ this coincides with the 1-norm.
-  \item If $J\subseteq I$ is a subset, write $\sum_J$ for the composite $\R^I\stackrel{\pi_J}{\rightarrow}\R^J\stackrel{\sum}{\rightarrow}\R$, that is, summation over the coordinates in $J$.
-  \item If $i\in I$ is a single element, write also $\sum_{\hat{i}}$ as a shorthand for $\sum_{I\setminus\{i\}}$.
-  \item If $M\leq N$ are natural numbers and $x\in\R^{\Overlay\times N}$, write $x_{\leq M}\in \uR^{\Overlay\times M}$ for the projection on the first $M$ terms.
-\end{itemize}
+\end{enumerate}
 
 
 
@@ -172,112 +195,89 @@ Fix the following notation for summation over subsets of indices:
 
 \section{Objectives of the system design}
 
-The objectives of the redistribution mechanism:
-\begin{itemize}
-  \item Decentralisation
-  \item Growth
-  \item Sybil resistance (of the redistribution mechanism)
-  \item Safety (of the chunk index)
-\end{itemize}
+\begin{notes}
 
-\subsection{Decentralisation}
+  \item The fundamental goal of the revenue sharing system is to entice node operators to provide a storage service that meets demand and quality of service (QoS) targets.
 
-Decentralisation is usually a primary objective of blockchain-based services.
+  Unfortunately, Swarm faces a difficulty in directly measuring the amount or quality of service provided by NOs; specifically, such measurement is vulnerable to a \emph{deduplication attack} where nodes claim to be hosting multiple replicas of the same data when in fact they only store one.
+  %
+  Therefore a supplementary approach to revenue share allocation is used to remove an incentive to falsely inflate storage capacity.
+
+  \item This directly entails three directly measurable dimensions of objectives: realised demand, protocol revenue, and QoS in the form of replication rate.
+
+  \item In \S\ref{section:efficiency} we define and establish equivalent conditions for Pareto optimality of a (demand, price, QoS) outcome.
+
+  \item In \S\ref{section:redistribution} we discuss redistribution mechanisms that achieve Pareto optimal outcomes (given fixed exogenous demand surface) and pose the question of whether Swarm's system is one of them.
+
+  \item In \S\ref{section:decentralization} we consider measurement of decentralisation on various axes and its relation to monopoly control of allocation, particularly censorship, and pricing.
+
+  \item Yet another, rather more specific, goal of the redistribution system is to guarantee consistency of the chunk index. Do we consider this a type of QoS guarantee? Either way, it is somewhat outside the scope of our models.
+
+\end{notes}
+
+\subsection{Objective functions}
+
+We identify three measurable core objective functions that exhibit the economic performance of the Swarm network:
 %
-Decentralisation can be measured in terms of the difficulty by which an adversary can unilaterally control aspects of the system.
+\begin{enumerate}
 
-In markets, centralisation arises in the exercise of \emph{market power}.
-%
-Hence, centralisation occurs as a result of market share concentration.
-%
-Therefore, measures of concentration of a distribution can be used as a proxy for assessing market power.
+  \item Protocol revenue, i.e.~the total cash flows into the Postage contract;
 
-In US anti-trust legislation, the Herfindahl-Hirschman index ($L^2$ norm) is used as a measure of concentration.
-%
-We advocate the use of Shannon entropy because of its composition rule.
+  \item Realised demand, i.e.~the total amount of storage quotas purchased from the Postage contract;
 
-Which distributions do we want to track in Swarm?
-%
-\begin{itemize}
-  \item The number of active nodes in a neighbourhood. This controls the replication rate.
-  \item The distribution of equity within a neighbourhood.
-  %
-  Concentration of equity at one node gives that node consensus power over the state of the reserve, which could be used for censorship.
-  %
-  A highly concentrated equity pool may also indicate a trend towards consolidation and hence reduced replication rate. 
-  %
-  If equity is allocated efficiently, this may also give an indication of differing operating costs.
-  \item The distribution of equity across neighbourhoods. We expect equity to be balanced across neighbourhoods in equilibrium, since all neighbourhoods have equal earning potential. A non-uniform distribution therefore indicates a market inefficiency.
-  \item Distribution of node count and per-neighbourhood equity by controlling entity. 
-  %
-  This depends on identifying and labelling addresses by owner, which is prone to errors and can be gamed, but still can be somewhat informative.
-  %
-  Concentration of control could indicate censorship power.
-  \item In order to control prices of Swarm storage (e.g.~pushing up the price to a monopoly rate), a would-be monopolist must control the average replication rate.
-  %
-  If the monopolist manages to acquire enough equity to make entry unprofitable, he can achieve this, especially if reallocations of stake between nodes is possible.
-\end{itemize}
+  \item Apparent replication rate, i.e.~the (mean) number of distinct nodes producing successful proofs in the redistribution game each round.\footnote{As discussed above, the true replication rate could be lower than the apparent replication rate because of deduplication/compression.}
 
-\subsection{Growth and efficiency}
+\end{enumerate}
+%
+The target of the revenue and demand objectives is straightforward: the higher the better.
+
+\subsubsection{Protocol revenue}
+
+It might also be reasonable to consider the total \emph{profit} of NOs as an objective, but this is not directly measurable.
+%
+Similarly, protocol profit, if there were any part of revenue claimed by the protocol, would also be a reasonable objective.
+
+Aggregate NO cost minimisation is still required for these objectives, but the savings are not necessarily fully communicated to users in the form of price reductions.
+
+
+\subsubsection{Realised demand}
+
+Straightforward.
+%
+We note that under the demand theory of ordinary goods, demand decreases with price (given fixed QoS).
+%
+Similarly, it is reasonable to assume that demand increases with QoS.
+%
+So this objective is related to the objective of minimising price at a given QoS, or maximising QoS at a given price.
+
+\subsubsection{Quality of service}
+
+The stated goal of the Swarm Protocol design is to target a replication rate of 4.
+%
+We argue that a replication rate of higher than 4 would not be objectionable if it did not negatively impact the other two objectives.
+%
+Thus replication rate is also a function that we wish to maximise as part of a multi-objective optimisation framework.
+
+In our model of the Swarm storage service, nodes are simply either active or inactive --- for simplicity, we are not taking into account any gradations in service quality (such as retrieval latency and bandwidth).
+
+\subsection{Efficiency}
+\label{section:efficiency}
 
 Broadly speaking, economic efficiency means that resources are allocated where they can be deployed most productively.
 %
 That is, efficient allocations are those that optimise economic growth.
+
+%The Swarm network maintains an internal state that controls the distribution of revenue for the storage service; this redistribution is efficient if it is optimised for growth of the demand serviced, given fixed exogenous world state and constraints on the quality of service --- most essentially for us, the replication rate $q\geq 4$.
 %
-The Swarm network maintains an internal state that controls the distribution of revenue for the storage service; this redistribution is efficient if it is optimised for growth of the demand serviced, given fixed exogenous world state and constraints on the quality of service --- most essentially for us, the replication rate $q\geq 4$.
+%All other things being equal, demand tends higher when prices are lower, so an equivalent goal is the optimisation of price at the target replication rate.
+
+
 %
-All other things being equal, demand tends higher when prices are lower, so an equivalent goal is the optimisation of price at the target replication rate.
-
-In our model of the Swarm storage service, nodes are simply either active or inactive --- for simplicity, we are not taking into account any gradations in service quality (such as retrieval latency and bandwidth).
-%
-An efficient allocation of Swarm revenue share would allow the NOs with lowest costs to become active, driving those with higher costs out of business and allowing the cost savings to be passed onto customers in the form of lower price per replica.
+%An efficient allocation of Swarm revenue share would allow the NOs with lowest costs to become active, driving those with higher costs out of business and allowing the cost savings to be passed onto customers in the form of lower price per replica.
 
 
 
-\begin{comment}
-Since for the purposes of this work, the service provided by each Swarm node is assumed to be of constant quality --- it's either on or off --- profit margins, and hence productivity, of a node operator, depend only on operating costs.
-%
-On the other hand, the quality of service \emph{received} by storage clients is a function of the replication rate, a proxy for durability.
-
-Let $D(p,q)$ be the number of units of (potential) demand at price $p$ and QoS $q$.
-%
-If we focus attention on one neighbourhood and normalise size units to the neighbourhood, $D(p,q)\in[\frac{1}{2},1]$.\footnote{This makes sense only if we assume that total demand remains within $[2^D,2^{D+1}]$ in the region of analysis.}
-%
-Usually, $D$ is decreasing in $p$ and increasing in $q$, though we expect it to be bounded in $q$.
-
-Similarly, let $S(p;\xi)$ be the number of units supplied at price $p$ given stake registry state $\xi$.
-%
-Since storage providers are indifferent to the contents of the chunks they host, replicas count the same as distinct chunks.
-%
-So 
-
-If we restrict attention to an individual neighbourhood and use the neighbourhood capacity (16GiB) as a unit, $S(p;\xi)\in[\frac{q}{2},q]$, where $q$ is the replication rate of the neighbourhood.
-%
-If we further assume that operating costs do not depend on the fraction of the reserve (within $[\frac{1}{2},1]$) that is used --- that is, NOs must reserve the same amount of computational resources regardless of the reserve state --- then in fact $S(p;\xi) = q(\xi)$ is simply the number of nodes that can operate profitably in world state $\xi$.
-
-
-The microeconomic equilibrium equation is
-\[
-  q D(p,q) = S(p;\xi).
-\]
-\end{comment}
-
-It isn't necessarily the case that maximising sales is the system objective; maximising total revenue or even maximising protocol profits (currently zero, and there exists no system to claim them) could also be reasonable system objectives.
-%
-Aggregate NO cost minimisation is still required for these objectives, but the savings are not necessarily fully communicated to users in the form of price reductions.
-
-
-\paragraph{Objective functions}
-%
-Consider the following three objective functions:
-\begin{enumerate}
-  \item Maximise sales (growth) subject to QoS constraints;
-  \item Minimise storage price subject to QoS constraints;
-  \item Maximise QoS at a given price.
-\end{enumerate}
-For the third criterion, we evaluate QoS purely in terms of replication rate, which the design of the Swarm protocol calls for having a target value of $4$.\footnote{Presumably, if a strictly higher replication rate can be provided for the same or lower price, this would also be fine.}
-
-\paragraph{Market clearing model} This is really somewhat incidental to the discussion of revenue redistribution, so we will treat it only briefly. See \cite[\S10]{MT}.
+\paragraph{Market clearing model} This is really somewhat incidental to the discussion of revenue redistribution, so we will treat it only briefly. See \cite[\S10]{mascollel1995microeconomic}.
 
 If we write $\mathcal{D}=\uR$ for demand space, $\mathcal{P}=\uR$ for price space, and $\mathcal{Q}=\uR$ for QoS (replication rate) space, then the Swarm protocol rules and exogenous world state determines a set of feasible allocations
 %
@@ -287,13 +287,23 @@ If we write $\mathcal{D}=\uR$ for demand space, $\mathcal{P}=\uR$ for price spac
 %
 Here, a point $(D,p,q)$ is \emph{feasible} if:
 \begin{itemize}
-  \item The aggregate demand $D$ is realisable at price $p$;
+  \item The aggregate demand $D$ is realisable at price $p$ and QoS $q$;
   \item The realised revenue $R=pD$ can be distributed among a population of storage providers \emph{in some way} such that they would collectively be prepared to meet the demand $D$ with replication rate $q$, i.e.~provide $qD$ units of storage.
 \end{itemize}
 %
-In this study, we black box the demand function $D=D(p)$ as an exogenous signal.
+Since our focus is revenue redistribution, we black box the demand surface $X(p,q)$ as an exogenous signal.
 %
 The means by which the supply-side revenue distribution is achieved is within the purview of the Swarm protocol designers.
+
+\begin{definition}[Pareto efficiency]
+
+  The market state $(D,p,q)$ is \emph{(Pareto) efficient} if the following equivalent conditions are satisfied:
+  \begin{enumerate}
+    \item $p$ is minimal in $X_q$;
+    \item $q$ is minimal in $X_p$;
+  \end{enumerate}
+
+\end{definition}
 
 If Swarm storage is an ordinary good, for any $q\in \mathcal{Q}$, the feasible slice 
 \[
@@ -314,7 +324,11 @@ Classical supply theory tells us that $q^*(p)$ is \emph{increasing} in $p$.
 %
 Then the price objective can be achieved by finding the minimal $p$ such that $q^*(p)\geq 4$; if $q^*$ is strictly increasing in $p$, continuous, and $q^*(0)=0$, then this minimum achieves the target rate $q^*=4$.
 
-\paragraph{Redistribution mechanisms}
+
+\subsection{Redistribution mechanisms}
+
+\label{section:redistribution}
+
 The mechanism design approach to economic allocation tells us to search for a budget-balanced redistribution mechanism
 \[
   \mathbf{M}:\uR \times \Omega \rightarrow \uR^\Overlay
@@ -379,15 +393,155 @@ Instead, we must rely on the laws of competition to induce rellocation of market
 
 \begin{question} Does the Swarm redistribution mechanism implement $(p^*(4),4)$? \end{question}
 
+\subsection{Tokenisation}
+
+In this section, we establish trade ranges in a setting where equity positions are tokenised and freely tradable.
+
+\begin{itemize}
+
+  \item The space of revenue share allocations state space is the cone $\uR^K$, where $K$ is the number of (potential) stakeholders.
+
+  \item There's a projection $\uR^K\setminus\{0\}\rightarrow \Delta^{K-1}$ onto the set of allocations; payoffs of a stake position depend only on the quotient.
+
+  \item Suppose NOs can buy and sell equity stakes in arbitrary quantities. 
+  %
+  It is rational for an active NO $i$ to accept a one-off payment $P$ for an amount $k$ of stake if 
+  \[
+    \frac{S_i}{\sum S} R - O_i \leq P + \max\{ \frac{S_i-k}{\sum S} R - O_i, 0\}
+  \]
+  with the understanding that $i$ will shut down their node if $\frac{S_i-k}{\sum S}R<O_i$.
+  %
+  In other words, the acceptance threshold is
+  \[
+    P \geq \min\left\{ \frac{k}{\sum S} R, \frac{S_i}{\sum S} R - O_i \right\}
+  \]
+
+  \item Meanwhile, it is rational for an active NO to offer a payment $P$ for $k$ shares if
+  \[
+    P \leq \frac{k}{\sum S}R.
+  \]
+  For an inactive NO with operating cost $O_i$, the figure is
+  \[
+    P \leq \frac{k}{\sum S}R - O_i.
+  \]
+
+  \item Clearly, a trade is therefore possible if the buyer is either already active, or is inactive but with lower operating cost than the seller.
+  %
+  We can therefore expect a trend towards consolidation and stake accumulation towards NOs with lower operating costs.
+  
+  If $i^*$ is the index maximising $O_i/S_i$, then the price (per unit share) interval in which trading is possible is
+  \[
+    \left[ R/\sum S - O_{i^*}/S_{i^*}, \min\{ R/\sum S, p_{\oracle} \} \right]
+  \]
+
+\end{itemize}
+
+\begin{proposition*}
+
+  Suppose that revenue share allocations are tokenised and freely tradable in any quantity.
+  %
+  Then from any starting allocation, there exists a sequence of incentive-compatible trades that result in the optimal allocation of Proposition \ref{section:efficiency}.
+
+\end{proposition*}
+
+This argument assumed that the forecast returns $R$ do not depend on whether or not the trade occurs. 
+%
+But a buyout of an active node by another active node could cause the observed replication rate to go down, causing the quoted storage price to go up. 
+%
+Under this condition, a sophisticated NO would revise their forecast for $R$ --- broadly speaking, the effect should be to drive revenue up in the short term (particularly for existing storage quotas, which cannot be cancelled), but to drive demand down in the medium term.
+
+(Of course, the buyer could also assign the stake to a new address that runs on deduplicated storage, preventing a reaction by the price oracle.)
+
+
+\subsection{Decentralisation}
+\label{section:decentralization}
+
+Decentralisation is usually a primary objective of blockchain-based services.
+%
+Decentralisation can be measured in terms of the difficulty by which an adversary can unilaterally control aspects of the system.
+%
+In the context of Swarm, we argue that the primary vectors of centralisation with which the system designer should concern himself are:
+%
+\begin{enumerate}
+  \item Censorship power, an aspect of allocation (i.e.~whether or not to provide the service for a given offer);
+  \item Market power, which can lead to monopoly pricing.
+\end{enumerate}
+
+Generally we would like to compute concentration or dispersion of some distributions of nodes by controlling entity.
+%
+Because node addresses are easily Sybilled, we should take some care about how we define the domain of such distributions.
+%
+A sophisticated approach based on linking and labelling addresses by owner is possible and has been applied with success across the blockchain industry \cite{}, though error-prone \cite{}.
+
+\begin{example}[Concentration measures]
+  
+  In US anti-trust legislation, the Herfindahl-Hirschman index ($L^2$ norm) is used as a measure of concentration.
+  %
+  We advocate the use of Shannon entropy because of its composition rule.
+
+\end{example}
+
+\subsubsection{Censorship}
+
+Data uploaded to the Swarm network is chunked and spread, essentially uniformly at random, across a number of replication bins that scales with the data size.
+%
+An entity that controls one of these replication bins can choose not to store or serve chunks of certain uploads that would land in its bin.
+%
+For some types of data, for example encrypted blocks, loss of a single chunk is as good as loss of the complete data; this therefore gives the controlling entity censorship power over such data.
+
+The simplest measure of control in a given replication bin is the number of active nodes participating in revenue sharing; a higher number indicates greater decentralisation.
+%
+This number is analogous to the \emph{Nakamoto coefficient} used to measure failure-resistance of Bitcoin consensus.
+
+A more refined approach would measure the ability of a single entity to (probabilistically) gain control over the replication bin's consensus over the chunk index; this ability scales with the equity share of the entity within that bin (and hence probability to be selected as consensus leader on any given cycle).
+
+A highly concentrated equity pool may also indicate a trend towards consolidation and hence reduced replication rate. 
+%
+If equity is allocated efficiently, this may also give an indication of differing operating costs.
+
+\subsubsection{Pricing power}
+%
+In order to gain pricing power over the Swarm protocol, an entity must have sufficient market share to directly influence either the BZZ/USD price or the price oracle.
+%
+The price oracle can be influenced by manipulating the replication rate.
+
+To be able to influence the global replication rate with any degree of reliability, the adversary likely controls nodes across many replication bins.
+%
+Since such nodes necessarily have different Ethereum addresses (post SWIP-19), the assumption of one address per entity won't hold for measuring this; we must link addresses together.
+
+If the monopolist manages to acquire enough equity to make entry unprofitable, he can achieve this, especially if reallocations of stake between nodes is possible.
+
+\subsubsection{Neighbourhood weight}
+
+We expect equity to be balanced across neighbourhoods in equilibrium, since all neighbourhoods have equal earning potential.
+%
+However, in practice non-uniform distributions arise; these could be understood as an indicator of allocative inefficiency.
+%
+Currently, the only opportunities for rebalancing investment across replication neighbourhoods are:
+\begin{enumerate}
+  \item Minting new shares in under-invested neighbourhoods;
+  \item Switching off nodes in over-invested neighbourhoods;
+  \item Under SWIP-19, moving a node from an over-invested neighbourhood to an under-invested one.
+\end{enumerate}
+%
+The dispersion of neighbourhood weights is a measure of how well these moves permit a convergence on balanced equity.
 
 
 \newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Incentive model}
+\label{section:model}
 
-Nodes cannot commit and hence receive rewards for two epochs after updating stake. \url{https://github.com/ethersphere/storage-incentives/blob/v0.9.1/src/Redistribution.sol#L304-L306}
+\begin{notes}
+  
+  \item We begin by establishing the incentive model for node agents and writing the policy optimisation problem in a general form.
 
+  \item We also exhibit the most basic rationality constraint for agent policies, that of \emph{rational liveness} --- an NO will not activate their node in a given epoch unless it is profitable to do so.
+
+  \item Assumptions of the model are delineated.
+
+\end{notes}
 \subsection{Preliminaries}
 
 \paragraph{Addresses}
@@ -633,14 +787,20 @@ We summarise here the intuitive sense of the assumptions implicit in this model 
   \item \emph{Stake update cool-off}. %
     We assume that NOs may \code{commit()} and receive revenue in the same epoch that they make a stake update.
     %
-    However, in the actual redistribution contract, \code{commit()} reverts if fewer than two rounds have passed since the most recent update.
+    However, in the actual redistribution contract, \code{commit()} reverts if fewer than two rounds have passed since the most recent update.\footnote{\url{https://github.com/ethersphere/storage-incentives/blob/v0.9.1/src/Redistribution.sol\#L304-L306}}
     %
     This discrepancy is not serious if we assume agents make decisions on a much longer timescale than 152-block rounds, for example daily.
 
   \item \emph{Storage service quality}. %
     We assume that the Swarm protocol is able to detect whether or not the storage service is provided and that a node is eligible for payouts if and only if it is active.
     %
+    There are no gradations of service quality for a single node.
+    %
     It follows that during each epoch, each NO may choose between providing the service or not providing it; there are no third options where the system can be `fooled' into paying out a reward where there is no service.
+    
+    We also assume that whenever the service is on, the NO remains in consensus with the rest of the neighbourhood; that is, slashing over safety failures is not considered.
+    %
+    This assumption is what makes the changes in the v0.8.6 upgrade of the storage incentives out of scope.
 
   \item \emph{Single node}.
     %
@@ -660,6 +820,11 @@ We summarise here the intuitive sense of the assumptions implicit in this model 
     %
     In particular, no agent's actions affect the outcomes of these processes.
 
+  \item \emph{Static neighbourhood set}.
+    We assume that the bit depth used to partition the overlay address space $\Overlay$ into replication bins is constant and common knowledge to all agents.
+    %
+    There are no neighbourhood split or merge events (which in the real network are triggered by the total storage size passing a power of $2$).
+
 
 
 \end{enumerate}
@@ -673,6 +838,16 @@ We summarise here the intuitive sense of the assumptions implicit in this model 
 
 
 \subsection{Optimal policies}
+\label{section:optimal}
+
+\begin{notes}
+  \item We formulate the policy optimisation problem as a stochastic dynamic programming problem with a risk-neutral agent.
+  \item The nonlinear part of the objective function comes from the share allocation $w_i$. We compute the ``impulse response'' (derivative) of a change in policy now on future values of $w_i$ and establish concavity.
+  \item The buy-in opportunity saturates when the list price $p_S$ of newly minted shares exceeds the marginal value $w\cdot TR$ of their discounted future cash flows. This gives an upper bound for entry into the replication neighbourhood (achieved by an agent with no operating costs and no existing stake in the neighbourhood).
+
+  We then reintroduce operating costs under a simplified, deterministic model and establish when entry is possible.
+  \item We then move on to computing the payoffs of various specific policies: the passive policy, a 1-optimal policy, and a ``chase-out'' policy where a new entrant aims to dilute an incumbent out of the profitable range. The computation has a closed form when we assume constant revenue and operating cost processes.
+\end{notes}
 
 The rational NO seeks a solution to the Bellman equation
 \[
@@ -721,7 +896,21 @@ The impulse response expression can be better understood by decomposing further 
 \]
 into terms representing the contribution from the newly minted share and the dilution of the existing share.
 
+
+\subsubsection{Concavity}
+We will show that for fixed environment state trajectory $\omega_\bullet$ and policies at all future time steps, the value function $V_\pi(\hat\xi)$ is concave in the action $\pi(\hat\xi)_\mathtt{mint}\in\uR$.
+
+We have
+\[
+  \frac {\partial^2 w_a} {\partial x^2} (\xi_\mathtt{eq}) = -2\cdot\frac {\sum_{\hat a}\xi_\mathtt{eq}} {(\sum \xi_\mathtt{eq})^3} \leq 0
+\]
+for $\xi_\mathtt{eq}\neq 0$ and $\xi_{a,\mathtt{eq}}\geq\tau$, with strict inequality whenever $\xi_{b,\mathtt{eq}}\neq 0$ for some $b\neq a$.
+
+For fixed sample path $\omega_\bullet$, optimal policy can therefore be numerically approximated using convex optimisation techniques.
+
+
 \subsubsection{Saturation bound}
+\label{section:saturation}
 The payoff from minting new shares is bounded above by the ratio
 \[
   \frac{TR}{p_S\cdot\sum \xi_\mathtt{eq}}
@@ -756,17 +945,6 @@ Indeed, the cost of the mint is exactly equal to the discounted future revenue r
 \end{itemize}
 %
 The saturation point can be achieved in practice either because multiple players stake at the same time and inadvertently push the total equity past the saturation point, or because new information results in a revised lower forecast for $\sum_{t\in\N}(1-r)\Expectation[\tilde R_t]$.
-
-\subsubsection{Concavity}
-We will show that for fixed environment state trajectory $\omega_\bullet$ and policies at all future time steps, the value function $V_\pi(\hat\xi)$ is concave in the action $\pi(\hat\xi)_\mathtt{mint}\in\uR$.
-
-We have
-\[
-  \frac {\partial^2 w_a} {\partial x^2} (\xi_\mathtt{eq}) = -2\cdot\frac {\sum_{\hat a}\xi_\mathtt{eq}} {(\sum \xi_\mathtt{eq})^3} \leq 0
-\]
-for $\xi_\mathtt{eq}\neq 0$ and $\xi_{a,\mathtt{eq}}\geq\tau$, with strict inequality whenever $\xi_{b,\mathtt{eq}}\neq 0$ for some $b\neq a$.
-
-For fixed sample path $\omega_\bullet$, optimal policy can therefore be numerically approximated using convex optimisation techniques.
 
 \subsubsection{Threshold}
 %
@@ -896,9 +1074,63 @@ Then entry is feasible in the range $u \leq \frac{1}{2}(1+v^2)$.
 
 \end{proposition*}
 
-\subsubsection{Driving out competitors}
+\begin{corollary*}
+
+  Suppose the existing stake in a neighbourhood is half saturated, i.e.~$\ssum\check\xi=1/2$.
+  %
+  Then a new operator $a$ has a feasible entry to the neighbourhood if and only if $O_a\leq \frac{3}{2}-\sqrt{2}< 0.086$.
+
+\end{corollary*}
+
+\begin{corollary*}
+
+  Suppose operating costs of operators are bounded below by some constant $K\in(0,\frac{1}{2})$.
+  %
+  Then there exists an initial stake $x\in(\frac{1}{2},1-K)$ at which no new operator has a feasible entry.
+
+\end{corollary*}
+%
+\begin{proof}
+
+  We must find $x$ such that for any $O_a\geq K$,
+  \[
+    x + O_a > \frac{1}{2}(1 + (x-O_a)^2);
+  \]
+  it suffices to show this for $O_a=K$.
+  %
+  Expanding and rearranging, we find the inequality
+  \[
+    x^2 - 2(1+K) x + (1-K)^2 < 0.
+  \]
+  by inspection of the discriminant
+  \begin{align*}
+    \Delta &= (-2(1+K))^2 - 4(1-K)^2 \\
+    &= 16K > 0,
+  \end{align*}
+  the quadratic has two real roots
+  \[
+    1 + K \pm 2\sqrt{K}.
+  \]
+  The inequality is satisfied between these roots, that is, for $x \in ( 1+K-2\sqrt{K}, 1-K)$; since $K<1$ and so $K<\sqrt{K}$, this interval is always nonempty. \qedhere
+
+\end{proof}
+
+\begin{example}
+
+  In practice, the saturation proportion needed to block entry of new NOs is modest even for quite small $K$.
+  %
+  For example, with $K=1/25$ (so that each NO has operating costs of at least $4\%$ of neighbourhood revenue), a stake saturation level of $\frac{16}{25}=64\%$ is enough to block entry.
+  %
+  Correspondingly, it is feasible for an agent with operating cost ratio up to $36\%$ to unilaterally block entry in this way.
+
+\end{example}
+
+
+\subsubsection{Squeezing}
 
 How much must an adversary $b\in\Overlay\setminus\{a\}$ invest to dilute agent $a$ to the point where its expected cash flow is negative, so that $a$ turns off its node?
+%
+We say that $a$ has been \emph{squeezed out} by $b$, because $b$ undercut $a$ (by increasing its market share) to the point where $a$'s revenue (at fixed capacity) fails to cover its fixed costs $O_a$.
 %
 Rearranging the cash flow condition, we find
 \begin{align*}
@@ -908,7 +1140,7 @@ Rearranging the cash flow condition, we find
 \end{align*}
 That is, $a$ is cash flow negative iff the ratio of shares held by other agents to shares held by $a$ exceeds the ratio of $a$'s profit margin to cost.
 %
-An adversary that mints $x$ additional shares drives $a$ out of profitability if and only if
+An adversary that mints $x$ additional shares prices out $a$ if and only if
 \[
   x > \frac { \xi_a(R-O_a) } {O_a} - \xi_{-a}.
 \]
@@ -949,34 +1181,52 @@ and any stake larger than $rRO_a/(R-O_a)$ will do.
   
   Suppose $O_a< \frac{3-\sqrt {5}}{2} \cdot R$ and that $a$ has the first mover advantage.
   %
-  Then there exists a positive EV strategy $s$ for $a$ such that no single rational adversary $b$ will ever dilute $a$ out of profitability.
+  Then there exists a positive EV strategy $s$ for $a$ such that no single rational adversary $b$ will ever price $a$ out.
 
 \end{proposition*}
-
-We have not ruled out the possibility of $b$ diluting $a$ to less than the negative cash flow threshold.
 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \subsection{Risk}
+\label{section:risk}
 
-\begin{itemize}
+\begin{notes}
   \item
     A risk model assesses the chance of adverse events or outcomes that affect the agent's ability to continue operations (e.g.~because of bankruptcy or loss of confidence).
   \item
     Sources of risk are found in all random or unknown elements of the model: total network revenue, operating costs, the lottery determining who receives the payout in each epoch, and the unknown incentive functions and strategies of other NOs.
   \item
-    Real-world NOs are not risk-neutral. They all do some risk management, whether informally or as part of a formal frameworkmanage risk, informally or formally.
+    Real-world NOs are not risk-neutral. They all do some risk management, whether informally or as part of a formal framework.
+    %
+    Hence, a simple agent risk model should help us understand and forecast the behaviour of NOs in the wild.
+
   \item
     Smaller, less well-capitalised operators are suffer worse outcomes under tail events; they also have fewer resources available to accurately measure risk.
     %
     Quantifying the effects of NO and network scaling on risk helps us understand the tradeoff between decentralisation and efficiency of the market as a whole.
+
   \item
     Our main objective was to study the risk of tail events such as running out of operating cash.
     %
     The most obvious source of risk for this is the lottery-like payout structure, which is extremely common across the blockchain industry.
-\end{itemize}
+
+  \item
+    For computing ruin probabilities we used the hitting time theorem to convert the problem into a sum of binomial probabilities.
+    %
+    This lends itself easily to computer evaluation, especially over finite time horizons; for infinite time horizons, the approximations appear to stabilise, though we are missing theoretical results on the rate of convergence.
+
+  \item
+    We tried various approaches to discover exact closed forms for ruin probabilities, but these were inconclusive.
+    %
+    We haven't even been able to prove that the eventual ruin probabilities are ever $<1$.
+
+  \item
+    All of our approaches used a discretised model where the lottery payout is an integer multiple of the cost per round.
+    %
+    A more realistic approach might use ruin probabilities of L\'evy processes, but we didn't get into that at all.
+\end{notes}
 
 
 We'll focus on tail event risk.
@@ -1064,86 +1314,7 @@ Summing up over all $n$ and $C_0$, we may compute the generating function of the
 Alternatively, the RHS can be computed directly quite quickly using a computer.    
 
     
-\begin{lemma}
 
-  $\sum_{n=N}^\infty { n\choose k } x^n = {k+N \choose k} \frac{x^N}{(1-x)^{N+k+1}}$
-
-\end{lemma}
-
-Summing over all integer hitting times and starting capital, we find
-\begin{align*}
-  \sum_{k=1}^\infty\sum_{n\in\N} \Prob[T_0 = n\mid C_0=k]u^k &= \sum_{k\in\N}\sum_{n\in\N} \frac{k}{n} \Prob[C_n = 0\mid C_0=k]u^k 
-\end{align*}
-\begin{align*}
-  &= \sum_{k\in\N}\sum_{n\in\N} \frac{k}{n} \Prob[k - n + R\tilde{U}_n = 0]u^k \\
-  &= \sum_{\ell\in\N}\sum_{n=\ell R}^\infty \frac{n-\ell R}{n} \Prob[\tilde{U}_n = \ell]u^{n-\ell R}   \qquad (k=n-\ell R)\\
-  &= \sum_{\ell\in\N} \left( \frac{p}{qu^R} \right)^\ell \sum_{n=\ell R}^\infty \left[ 
-    {n\choose \ell} - R \frac{\ell}{n} {n\choose \ell} 
-  \right](uq)^n \\
-  &= \sum_{\ell\in\N} \left( \frac{p}{qu^R} \right)^\ell 
-  \left( 
-    \sum_{n=\ell R}^\infty {n\choose \ell} (uq)^n - 
-    Ruq \sum_{n=\ell R - 1}^\infty {n\choose \ell-1} (uq)^n
-  \right) \\
-  &= \sum_{\ell\in\N} \left( 
-    \frac{p}{qu^R} 
-  \right)^\ell 
-  \left(
-    {\ell(R+1) \choose \ell} \frac{ (uq)^{\ell R} } {(1-uq)^{\ell(R+1)+1} } - 
-    Ruq {\ell(R+1)-2 \choose \ell - 1} \frac { (uq)^{\ell R-1} } { (1-uq)^{\ell(R+1) -1} }
-  \right) \\
-  &= \sum_{\ell\in\N} \left( 
-    \frac{p(uq)^R}{qu^R(1-uq)^{R+1}} 
-  \right)^\ell 
-  \left(
-    {\ell(R+1) \choose \ell} (1-uq)^{-1} - 
-    R {\ell(R+1)-2 \choose \ell - 1} (1-uq)
-  \right)  \\
-  &= \sum_{\ell\in\N} \left( 
-    \frac{pq^{R-1}}{(1-uq)^{R+1}} 
-  \right)^\ell 
-  \left(
-    {\ell(R+1) \choose \ell} (1-uq)^{-1} - 
-    R {\ell(R+1)-2 \choose \ell - 1} (1-uq)
-  \right)
-\end{align*}
-%
-We don't know a closed form for this $\sum_\ell { k\ell \choose \ell }x^\ell $ for general $k>2$, but for $k=2$ these are the central binomial coefficients, so we can study this in closed form (although this case $R=1$ is not very important in practice).
-%
-\begin{align*}
-  &= \sum_{\ell\in\N} \left( 
-    \frac{p}{(1-uq)^{2}} 
-  \right)^\ell 
-  \left(
-    {2\ell \choose \ell} (1-uq)^{-1} - 
-    R {2(\ell-1) \choose \ell - 1} (1-uq)
-  \right) \\
-  &= \sum_{\ell\in\N} \left( 
-    \frac{p}{(1-uq)^{2}} 
-  \right)^\ell 
-  \left(
-    {2\ell \choose \ell} \frac{1-Rp}{1-uq}
-  \right) \\
-  &= \frac{1-Rp}{1-uq}\left(
-    1 - 4\cdot \frac{p}{(1-uq)^{2}}
-  \right)^{-\frac{1}{2}} 
-\end{align*}
-
-To solve for the eventual ruin probability, we need to specialise to fixed $k>0$ and sum over $n\in\N$.
-%
-We can extract this from the generating function by applying $\frac{\partial^k}{k!\partial u^k}$ and evaluating at $u=0,v=1$.
-%
-First setting $v=1$,
-%\begin{align*}
-%  \sum_{k\in\N}\sum_{n\in\N} \Prob[T_0 = n\mid C_0=k]u^k &= \left( 1- \frac{pu^{-R}}{(1-p)(1-u(1-p))} \right)^{-1}((1-u(1-p))^{-1}-R) 
-%\end{align*}
-%Then applying the $k$th derivative, we get
-
-
-%?
-%\[
-%  \Prob(T_0 <\infty\mid C_0=k) = (1-p)^{-k}(p^{-1}-R)
-%\]
 
 \begin{example}[Some calculations]
 
@@ -1155,154 +1326,48 @@ On the other hand, the payout in the unlikely case of receiving a reward before 
 
 \end{example}
 
-\subsection{Tokenisation}
+\subsection{Feasible allocations}
+\label{section:feasible}
 
-Currently, stake positions can only be bought or sold by handing over private keys, which is illiquid (only the full equity position of an address can be sold as a single unit) and fraught with difficulties.
-%
-In this section, we establish what trades would occur if equity positions were tokenised and freely tradable.
+\begin{notes}
 
-\begin{itemize}
+  \item The point of this section is to establish equilibria of the current Swarm redistribution mechanism that are `bad' in the sense that an efficient allocation of revenue share (cf.~\S\ref{section:redistribution}) can never be reached with the current set of allowed trades/options.
 
-  \item The stake registry state space is the cone $\uR^K$, where $K$ is the number of (potential) stakeholders.
+  \item We then briefly discuss other classes of options that could be introduced to rectify this issue.
 
-  \item There's a projection $\uR^K\setminus\{0\}\rightarrow \Delta^{K-1}$ onto the set of allocations; payoffs of a stake position depend only on the quotient.
+\end{notes}
 
-  \item Suppose NOs can buy and sell equity stakes. It is rational for an active NO $i$ to accept a one-off payment $P$ for an amount $k$ of stake if 
-  \[
-    \frac{S_i}{\sum S} R - O_i \leq P + \max\{ \frac{S_i-k}{\sum S} R - O_i, 0\}
-  \]
-  with the understanding that $i$ will shut down their node if $\frac{S_i-k}{\sum S}R<O_i$.
-  %
-  In other words, the acceptance threshold is
-  \[
-    P \geq \min\left\{ \frac{k}{\sum S} R, \frac{S_i}{\sum S} R - O_i \right\}
-  \]
-
-  \item Meanwhile, it is rational for an active NO to offer a payment $P$ for $k$ shares if
-  \[
-    P \leq \frac{k}{\sum S}R.
-  \]
-  For an inactive NO with operating cost $O_i$, the figure is
-  \[
-    P \leq \frac{k}{\sum S}R - O_i.
-  \]
-
-  \item Clearly, a trade is therefore possible if the buyer is either already active, or is inactive but with lower operating cost than the seller.
-  %
-  We can therefore expect a trend towards consolidation and stake accumulation towards NOs with lower operating costs.
-  
-  If $i^*$ is the index maximising $O_i/S_i$, then the price (per unit share) interval in which trading is possible is
-  \[
-    \left[ R/\sum S - O_{i^*}/S_{i^*}, \min\{ R/\sum S, p_{\oracle} \} \right]
-  \]
-
-  \item The preceding arguments assumed that the forecast returns $R$ do not depend on whether or not the trade occurs. 
-  %
-  But a buyout of an active node by another active node could cause the observed replication rate to go down, causing the quoted storage price to go up. 
-  %
-  Under this condition, a sophisticated NO would revise their forecast for $R$ --- broadly speaking, the effect should be to drive revenue up in the short term (particularly for existing storage quotas, which cannot be cancelled), but to drive demand down in the medium term.
-  
-  (Of course, the buyer could also assign the stake to a new address that runs on deduplicated storage, preventing a reaction by the price oracle.)
-
-  \item Since equity can always be acquired directly from the stake registry contract for the quoted price $p_\oracle$ (which was just $1$ before the SWIP-19 migration), the market price is capped by $p_\oracle$, i.e.~no trade will occur at a price of more than $p_\oracle$ per share.
-
-  The feasible region is the polytope $\{S\in\uR^K\mid p_\oracle\cdot\sum S \leq R\}$ where $R$ is the discounted expected future revenue of the neighbourhood.
-
-  \item If \emph{redemption} at the oracle price is also possible, then the price is effectively pegged at $p_\oracle$.
-\end{itemize}
-
-\subsection{Efficiency}
-
-Due to the phenomenon of investment saturation we identified in August --- where stake positions become dilute enough that any newly issued share is worth less than its price --- there are plausible initial conditions where all issued shares end up permanently associated with a single entity.
+Due to the phenomenon of investment saturation identified in \S\ref{section:saturation}, there are plausible initial conditions where all issued shares end up permanently associated with a single entity.
 %
 In other words, no matter how much lower are the costs of prospective new entrants than the incumbent, there is no incentive-compatible way for equity to be transferred to the new entrants and hence achieve a QoS-optimal allocation.
 
 \begin{proposition*}
-  Let $i$ be an NO with cost $O$. 
+
+  Suppose that NO cost-revenue ratios are bounded below by $K>0$.
   %
-  Suppose that $i$ has an exclusive first-move opportunity to acquire shares in an as-yet unoccupied neighbourhood.
+  Let $a$ be an NO with cost $O_a$. 
   %
-  For all sufficiently low cost-revenue ratios $O/R$, there exists a position $s$ that $i$ may acquire such that:
+  Suppose that $a$ has an exclusive first-move opportunity to acquire shares in an as-yet unoccupied neighbourhood, and that there is exactly one other agent $b$ who may move into the neighbourhood after $a$.
+  %
+  For all sufficiently low cost-revenue ratios $O_a/R$, there exists a position $s$ that $a$ may acquire such that:
   \begin{enumerate}
-    \item for all NO populations $O:\Overlay\rightarrow\uR$, there is a time-invariant Nash equilibrium in which no new stake updates are made and $i$ remains the sole stakeholder;
-    \item It is individually rational for $i$ to make the initial investment $s$; i.e.~$i$ earns at least $s$ in total discounted future profit from his investment.
+    \item for all NO populations $O:\Overlay\rightarrow\uR$, there is a time-invariant Nash equilibrium in which no new stake updates are made and $a$ remains the sole stakeholder;
+    \item It is individually rational for $a$ to make the initial investment $s$; i.e.~$a$ earns at least $s$ in total discounted future profit from his investment at equilibrium.
   \end{enumerate}
-  Moreover, $O/R\leq \frac{3-\sqrt{5}}{2}> 0.32$ is sufficiently low.
+  Moreover, $O_a/R < \min\{0.32, 2\sqrt{K}-K\}$ is sufficiently low.
+
 \end{proposition*}
-
-It follows that the Swarm redistribution mechanism does not reliably implement $(p^*(q),q)$ for any $q>1$.
 %
-What can we do to address this problem?
+\begin{proof}
 
-If we posit a market in which stake positions can be freely traded at any price, then unsurprisingly we find that the feasible trades generally result in transfers of stake from NOs with higher costs to those with lower costs, improving efficiency.
-%
-Thus in order for Swarm's equity allocation to reliably reach QoS-optimal equilibria, it is sufficient to allow stake positions to be transferred and traded under arbitrary market structures.
-%
-However, this is not the only way to achieve this: for example, it is also sufficient to allow stake to be liquidated so that it may then be reissued to another party with a higher valuation for the position.
+  The two terms in the bound come from the feasibility thresholds of entry given that $a$ remains in the neighbourhood and of a direct squeeze-out. \qedhere
 
+\end{proof}
 
-
-\begin{itemize}
-
-  \item
-    Within a neighbourhood $\nu$, we have 
-    \[
-      S(p;\xi) = q = |\{i\in\nu \mid w_iDp > O_i  \}| \in \N
-    \]
-    where $D$ is the realised demand.
-
-    If we restrict attention to an individual neighbourhood and use the neighbourhood capacity (16GiB) as a unit, $S(p;\xi)$ is simply the replication rate of the neighbourhood.
-
-  \item
-    Assume equal stake distribution $\xi \equiv 1$ and let $S(p)=S(p,\mathbf{1})$.
-    %
-    If the replication rate is $q$, then each individual agent supplies $S(p)/q$ units of storage, and the total number of distinct units of data that can be stored at replication rate $q$ is $S(p)/q$.
-    %
-    Thus, the microeconomic equilibrium equation is $D(p,q)=S(p)/q$.
-    %
-    It has one degree of freedom.
-
-  \item
-    We define the \emph{optimal} supply at price $p$ as
-    \[
-      S^*(p) = \sup_\xi S(p;\xi).
-    \]
-    It can be computed as follows: sort the agents in ascending order of operating costs $O_1\leq O_2 \leq \cdots O_K$.
-    %
-    Let $M\leq K$ be the largest integer such that $\sum_{i=1}^MO_i \leq Dp$.
-    %
-    Then an optimal share allocation is given by $w_i = O_i / \sum_{i=1}^MO_i$ for $i\leq M$ and $w_i=0$ for $i>M$.
-
-  \item
-    A reasonable efficiency objective for the Swarm system is to find an equilibrium with the minimal $p$ such that $S^*(p)\geq q_\mathrm{tar}$.
-    %
-    This is achieved if the active operators in each neighbourhood are exactly the four operators with the lowest costs.
-
-  \item
-    The \emph{welfare} of the Swarm storage market is defined to be
-    \[
-      U(q,D) - \sum_{i\text{ active}}O_i
-    \]
-    where $U(q,D)$ is the utility of the system at QoS $q$ and realised demand $D$.
-    %
-    The function $U(q,D)$ is something to be chosen by system designers based on their objective; I posit the choice
-    \[
-      U(q,D) = \frac{\alpha D}{2}(q-4)^2,
-    \]
-    where $\alpha>0$ is an arbitrary coupling constant, as one that respects the current system's stated objectives and, to an extent, its implementation.
-    %
-    Larger values of $\alpha$ mean that missing the quality target is penalised more than incurring higher actual cost.
-    %
-    On the other hand, given that the quality target is met, the only criterion is reducing total cost.
-    
-    Dimensional analysis tells us that $\alpha$ has units of price.
-
-\end{itemize}
+Under such conditions, the Swarm redistribution mechanism does not implement $(p^*(q),q)$ for any $q>1$, even though under conditions of tokenised, freely tradable stake positions, optimal allocations are reachable (\S\ref{section:redistribution}).
 
 
-
-
-\subsection{Options}
+\subsubsection{Options}
 
 Prior to storage incentives version 0.9.1, bin shares cannot be redeemed except in extenuating network-wide circumstances.
 %
@@ -1322,22 +1387,40 @@ Various other systems are possible:
     If stake is automatically withdrawn after a fixed time, the bin share resembles a bond.
 
   \item
-    Under SWIP-19, collateral can be withdrawn at any time if the balance is affected by BZZ/USD  price fluctuations.
+    Under SWIP-20, collateral can be withdrawn at any time if the balance is affected by BZZ/USD  price fluctuations.
     
-  \item
-    Under SWIP-20, bin shares can be fully, but not partially, redeemed at any time in exchange for the same number of shares in a different bin.
 \end{itemize}
 %
 Clearly, introducing any type of optionality into the share system renders the computation of its net present value more complicated.
+
+\subsubsection{Conversion}
+
+Under SWIP-19, bin shares can be fully, but not partially, redeemed at any time in exchange for the same number of shares in a different bin.
+
+\subsubsection{Redemption/buyback}
+
+Since equity can always be acquired directly from the stake registry contract for the quoted price $p_\oracle$ (which was just $1$ before the SWIP-19 migration), the market price is capped by $p_\oracle$, i.e.~no trade will occur at a price of more than $p_\oracle$ per share.
+
+The feasible region is the polytope $\{S\in\uR^K\mid p_\oracle\cdot\sum S \leq TR\}$.
+
+If \emph{redemption} at the oracle price is also possible, then the price is effectively pegged at $p_\oracle$.
+
 
 \newpage
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Estimation}
+\label{section:estimation}
 
-Predictions are made on a set of signals, both internal and
+\begin{notes}
 
-\subsection{Reward pot}
+  \item Here we comment on how to measure and forecast the various exogenous signals in our model: revenue, operator cost, and the types and strategies of other agents.
+
+\end{notes}
+
+
+\subsection{Revenue}
+\label{section:revenue}
 
 The reward pot $R_t$ is calculated each round when the \texttt{claim()} function of the redistribution contract is called.
 %
@@ -1369,7 +1452,7 @@ Expansion of $\tilde{P}_t$ depends on the unit of account: in BZZ tokens we have
 \[
   \log\tilde{P}_t = \log\tilde{P}_{t-1} + \sigma\cdot \max\{q_\mathrm{tar} - q_{t-1},-4\}
 \]
-where $q$ is the ``quality of service'' as measured by the number of reveals in round $t-1$, $q_\mathrm{tar}=4$ is the target quality, and $\sigma$ is the adjustment rate \cite[\S3.4.5]{BOS}.
+where $q$ is the ``quality of service'' as measured by the number of reveals in round $t-1$, $q_\mathrm{tar}=4$ is the target quality, and $\sigma$ is the adjustment rate \cite[\S3.4.5]{book-of-swarm}.
 %
 Note that $q\geq 0$ by definition.
 
@@ -1385,6 +1468,7 @@ Note that $q\geq 0$ by definition.
 
 
 \subsection{Operating costs}
+\label{section:cost}
 
 The process $\tilde{O}_t$ represents the cost of operating a single node for a single epoch.
 %
@@ -1434,16 +1518,17 @@ The division into fixed and variable costs, although typical in business operati
 
 
 \subsection{Agent strategies}
+\label{section:strategies}
 
-Are NOs behaving competitively in the staking game?
+Which share acquisition strategies are NO agents adopting in practice?
 %
+Are NOs behaving competitively?
+%
+Are NOs rational?
 
-Significant dates:
-\begin{itemize}
-  \item September 21st, 2023. The \code{--target-neighborhood} option is introduced along with version 1.17.4 of the Bee software, allowing new nodes to specify the neighbourhood their node will occupy.
-  \item October--November, 2023. Over 16,000 new active nodes appear in China, quintupling the total number of active nodes in the network. Half of these become inactive after November.
-  \item May 2024. 11-bit replication neighbourhoods become common.
-\end{itemize}
+We undertook a simple observational study, described below.
+%
+The code is available in a notebook.
 
 \paragraph{Observation period}
 We drew observations from the deployment of v0.4.0 of the stake registry contract in block 25,527,075 until its pausing in block 35,963,617.\footnote{It might make sense to cut things off at the slightly earlier time of block 35,961,749, when version 0.9.1 of the stake registry contract incorporating rules from SWIP-19 and SWIP-20 was deployed, but since the difference was just 2 hours and 20 minutes, we ignore this.} This represents about 2 years of network activity
@@ -1451,6 +1536,14 @@ We drew observations from the deployment of v0.4.0 of the stake registry contrac
 We noticed substantial staking activity among new overlay addresses in October and November of 2023, presumably an impact of the thousands of new active nodes that reportedly appeared in China during this period.\footnote{\url{https://blog.ethswarm.org/foundation/2024/state-of-the-network-january/}}
 %
 We sampled this outlier event out of the data by only considering blocks starting at 31,000,000, around mid-November, by which time the main cluster of updates was complete.
+
+We note the following significant dates:
+\begin{itemize}
+  \item September 21st, 2023. The \code{--target-neighborhood} option is introduced along with version 1.17.4 of the Bee software, allowing new nodes to specify the replication neighbourhood their overlay address will occupy.
+  \item October--November, 2023. Over 16,000 new active nodes appear in China, quintupling the total number of active nodes in the network. Half of these become inactive after November.
+  \item May 2024. 11-bit replication neighbourhoods become common.
+\end{itemize}
+
 
 \paragraph{Binning} We gathered addresses into neighbourhoods assuming that the bit depth is 10.
 %
@@ -1551,3 +1644,124 @@ We posit that the most likely reason for this behaviour is that the same entity 
 %
 Since we have sorted by 10-bit neighbourhoods we have caught multiple of these nodes in the same bin, making their activity look like contention.
 
+
+\appendix
+
+\section{Notation index}
+
+\paragraph{Addresses}
+
+The set of agents is denoted $\Overlay$.
+%
+It can be realised as a set of \emph{overlay addresses}, for example, $\Overlay \cong \mathbb{F}_2^{256}$.
+
+The set of overlay addresses is divided into a set $\Bins$ of \emph{bins}.
+%
+In \cite{book-of-swarm}, these are also called \emph{neighbourhoods}; we prefer the term `bins' because it is shorter and because neighbourhoods can also be of various different sizes.
+%
+We are given a surjective map $\bin:\Overlay\rightarrow\Bins$ that takes an overlay address to the bin to which it belongs.
+%
+The fibre of $\bin$ over a bin $\nu\in\Bins$ is denoted $\Overlay_\nu$.
+
+In deployments, we have $\Bins\cong \mathbb{F}_2^D$ and the function $\bin$ is projection on the first $D$ bits, where $D$ is a network-wide dynamic variable called the \emph{network (log-)radius}.
+%
+For any $\nu\in\Bins$, we can then identify $\Overlay_\nu\simeq\mathbb{F}_2^{256-D}$ by projecting out the first $D$ bits.
+
+
+\paragraph{Balances} Balances are presumed to be non-negative real numbers, i.e.~elements of $\uR := [0,\infty)$.
+
+\paragraph{Summation}
+Fix the following notation for summation over subsets of indices:
+\begin{itemize}
+  \item if $x\in \mathbb{R}^I$ is a vector of finite length, write $\sum:=\sum_I:\R^I\rightarrow\R$ for the sum of the coordinates. On $\uR^I$ this coincides with the 1-norm.
+  \item If $J\subseteq I$ is a subset, write $\sum_J$ for the composite $\R^I\stackrel{\pi_J}{\rightarrow}\R^J\stackrel{\sum}{\rightarrow}\R$, that is, summation over the coordinates in $J$.
+  \item If $i\in I$ is a single element, write also $\sum_{\hat{i}}$ as a shorthand for $\sum_{I\setminus\{i\}}$.
+  \item If $M\leq N$ are natural numbers and $x\in\R^{\Overlay\times N}$, write $x_{\leq M}\in \uR^{\Overlay\times M}$ for the projection on the first $M$ terms.
+\end{itemize}
+
+
+\section{Ruin calculations}
+
+\begin{lemma}
+
+  $\sum_{n=N}^\infty { n\choose k } x^n = {k+N \choose k} \frac{x^N}{(1-x)^{N+k+1}}$
+
+\end{lemma}
+
+Summing over all integer hitting times and starting capital, we find
+\begin{align*}
+  \sum_{k=1}^\infty\sum_{n\in\N} \Prob[T_0 = n\mid C_0=k]u^k &= \sum_{k\in\N}\sum_{n\in\N} \frac{k}{n} \Prob[C_n = 0\mid C_0=k]u^k 
+\end{align*}
+\begin{align*}
+  &= \sum_{k\in\N}\sum_{n\in\N} \frac{k}{n} \Prob[k - n + R\tilde{U}_n = 0]u^k \\
+  &= \sum_{\ell\in\N}\sum_{n=\ell R}^\infty \frac{n-\ell R}{n} \Prob[\tilde{U}_n = \ell]u^{n-\ell R}   \qquad (k=n-\ell R)\\
+  &= \sum_{\ell\in\N} \left( \frac{p}{qu^R} \right)^\ell \sum_{n=\ell R}^\infty \left[ 
+    {n\choose \ell} - R \frac{\ell}{n} {n\choose \ell} 
+  \right](uq)^n \\
+  &= \sum_{\ell\in\N} \left( \frac{p}{qu^R} \right)^\ell 
+  \left( 
+    \sum_{n=\ell R}^\infty {n\choose \ell} (uq)^n - 
+    Ruq \sum_{n=\ell R - 1}^\infty {n\choose \ell-1} (uq)^n
+  \right) \\
+  &= \sum_{\ell\in\N} \left( 
+    \frac{p}{qu^R} 
+  \right)^\ell 
+  \left(
+    {\ell(R+1) \choose \ell} \frac{ (uq)^{\ell R} } {(1-uq)^{\ell(R+1)+1} } - 
+    Ruq {\ell(R+1)-2 \choose \ell - 1} \frac { (uq)^{\ell R-1} } { (1-uq)^{\ell(R+1) -1} }
+  \right) \\
+  &= \sum_{\ell\in\N} \left( 
+    \frac{p(uq)^R}{qu^R(1-uq)^{R+1}} 
+  \right)^\ell 
+  \left(
+    {\ell(R+1) \choose \ell} (1-uq)^{-1} - 
+    R {\ell(R+1)-2 \choose \ell - 1} (1-uq)
+  \right)  \\
+  &= \sum_{\ell\in\N} \left( 
+    \frac{pq^{R-1}}{(1-uq)^{R+1}} 
+  \right)^\ell 
+  \left(
+    {\ell(R+1) \choose \ell} (1-uq)^{-1} - 
+    R {\ell(R+1)-2 \choose \ell - 1} (1-uq)
+  \right)
+\end{align*}
+
+We don't know a closed form for the series $\sum_\ell { k\ell \choose \ell }x^\ell $ for general $k>2$.
+%
+However, for $k=2$ the coefficients are the central binomial coefficients, which we can study in closed form (although this case $R=1$ is not very important in practice).
+%
+\begin{align*}
+  &= \sum_{\ell\in\N} \left( 
+    \frac{p}{(1-uq)^{2}} 
+  \right)^\ell 
+  \left(
+    {2\ell \choose \ell} (1-uq)^{-1} - 
+    R {2(\ell-1) \choose \ell - 1} (1-uq)
+  \right) \\
+  &= \sum_{\ell\in\N} \left( 
+    \frac{p}{(1-uq)^{2}} 
+  \right)^\ell 
+  \left(
+    {2\ell \choose \ell} \frac{1-Rp}{1-uq}
+  \right) \\
+  &= \frac{1-Rp}{1-uq}\left(
+    1 - 4\cdot \frac{p}{(1-uq)^{2}}
+  \right)^{-\frac{1}{2}} 
+\end{align*}
+
+To solve for the eventual ruin probability, we need to specialise to fixed $k>0$ and sum over $n\in\N$.
+%
+In principle, we can extract this from the generating function by applying $\frac{\partial^k}{k!\partial u^k}$ and evaluating at $u=0$.
+%
+However, without any clear sign this is going to produce anything userful, we put aside the effort.
+
+%\begin{align*}
+%  \sum_{k\in\N}\sum_{n\in\N} \Prob[T_0 = n\mid C_0=k]u^k &= \left( 1- \frac{pu^{-R}}{(1-p)(1-u(1-p))} \right)^{-1}((1-u(1-p))^{-1}-R) 
+%\end{align*}
+%Then applying the $k$th derivative, we get
+
+
+%?
+%\[
+%  \Prob(T_0 <\infty\mid C_0=k) = (1-p)^{-k}(p^{-1}-R)
+%\]

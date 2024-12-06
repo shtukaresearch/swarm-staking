@@ -18,3 +18,13 @@
 \newcommand\code[1]{{\color{darkgray}\texttt{#1}}}
 %\newcommand\code[1]{\scalebox{0.7}[0.9]{\bfseries\color{darkgray}\texttt{#1}}}
 % May also use [ttscale=0.9] in font package options
+
+\newenvironment{notes}{%
+    \color{purple}\noindent\hrulefill%
+    \paragraph{Summary and working notes}%
+    \begin{itemize}%
+}{%
+    \end{itemize}%
+    \noindent\hrulefill
+    \vspace{\headsep}
+}
