@@ -1,7 +1,7 @@
 TARGET ?= ./target
 NAME = swarm-staking-report-10
 ENV_NAME = swarm-staking-build
-INVOKER ?= podman run --rm -v $$(pwd):/tex -v $$(pwd)/../common:/tex/common -w /tex $(ENV_NAME)
+INVOKER ?= podman run --rm -v $$(pwd):/tex:Z -v $$(pwd)/../common:/tex/common:Z -w /tex $(ENV_NAME)
 
 all: $(TARGET)/$(NAME).pdf
 

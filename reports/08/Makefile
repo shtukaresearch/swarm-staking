@@ -1,5 +1,5 @@
 TARGET ?= ./target
-INVOKER ?= podman run --rm -v $$(pwd):/tex -w /tex paber
+INVOKER ?= podman run --rm -v $$(pwd):/tex:Z -w /tex paber
 
 all: $(TARGET)/swarm-staking-report-08.pdf
 
