@@ -31,6 +31,38 @@
 
 \noindent\hrulefill
 }
+
+
+\newcommand\maketitlepage{%
+% main style
+\pagestyle{fancy}
+\fancyhead[L]{\@title}
+\fancyhead[R]{\scshape Shtuka research}
+\fancyfoot[L,C]{}
+\fancyfoot[R]{\thepage}
+\setlength{\headheight}{4ex}
+\thispagestyle{plain2}
+\quad\vfill
+\noindent\hrulefill
+
+\vspace{10ex}
+
+\noindent
+\begin{minipage}{\textwidth * 3 / 4}
+ {\noindent\Huge\scshape\color{darkgray}\textls*[50]{\@author}} \\
+ \\
+ {\noindent\Large\@title}
+\end{minipage}%
+% LOGO
+\begin{minipage}{\textwidth / 4}
+  \hfill\includegraphics[height=10ex]{common/logo}
+\end{minipage}
+
+\vspace{10ex}
+
+\noindent\hrulefill
+\vfill\newpage
+}
 \makeatother
 
 %%% HEADERS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -41,6 +73,13 @@
 \fancypagestyle{plain}{%
   \fancyhf{}
   \fancyfoot[R]{\thepage}
+  \setlength{\headheight}{4ex}
+  \renewcommand\headrulewidth{0pt}
+}
+
+
+\fancypagestyle{plain2}{%
+  \fancyhf{}
   \setlength{\headheight}{4ex}
   \renewcommand\headrulewidth{0pt}
 }
