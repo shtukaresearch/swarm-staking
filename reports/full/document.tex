@@ -142,14 +142,16 @@ For more details, see \cite{book-of-swarm}.
 
 The topic of study of this report is the Swarm Protocol revenue sharing mechanism design and its effect on the overall system design objectives.
 %
+For the benefit of the reader and to establish conventions for notation and terminology, we provide here a brief description of the current form of this mechanism.
+%
 \begin{enumerate}
   \item 
     The redistribution mechanism is governed by the Stake Registry and Redistribution contracts.
   
   \item
-    The Stake Registry maintains a table of xBZZ-denominated \emph{stake} or \emph{equity balances} associated to each overlay address.\footnote{    Prior to SWIP-19 \cite{swip-19}, share balances were associated to an overlay address.
+    The Stake Registry maintains a table of \emph{stake} or \emph{equity balances} associated to each overlay address.\footnote{    Prior to SWIP-19 \cite{swip-19}, share balances were associated to an overlay address.
     %
-    Post SWIP-19, balances are associated to a Gnosis chain address together with a derived overlay address \cite{swip-19}.
+    Post SWIP-19, balances are associated to a Gnosis chain address together with a derived overlay address.
     %
     That is, after these changes, each Gnosis chain address is associated to a unique share balance, instead of possibly several keyed by different overlay addresses derived using different nonces.}
     %
@@ -170,11 +172,11 @@ The topic of study of this report is the Swarm Protocol revenue sharing mechanis
     %
     The depth $d$ and the node's overlay address $a\in\Overlay$ together determine a neighbourhood $\Overlay(a,d)\subseteq\Overlay$ of $a$ in address space, comprising the addresses with the same $d$-bit prefix.
     %
-    This neighbourhood is the node's claimed \emph{area of responsibility}; it expects all nodes with addresses in $\Overlay(a,d)$ to store the same set of chunks, also with addresses in $\Overlay(a,d)$, as it does.
+    This neighbourhood is the node's claimed \emph{area of responsibility}; it expects all nodes with addresses in $\Overlay(a,d)$ to keep in reserve the same set of chunks, also with addresses in $\Overlay(a,d)$, as it does.
     
-    We also refer to this address space as the \emph{replication bin} claimed by $a$, because it comprises data that ought to be fully replicated among nodes having addresses in $\Overlay(a,d)$.
+    We also refer to this address space as the \emph{replication bin} claimed by $a$, because it comprises references to data that ought to be fully replicated among nodes having addresses in $\Overlay(a,d)$.
     %
-    That is, the apparent replication rate of data in this range is the number of participating nodes in $\Overlay(a,d)$.
+    In other words, the apparent replication rate of data in this range is the number of participating nodes in $\Overlay(a,d)$.
 
     
   \item
@@ -188,7 +190,7 @@ The topic of study of this report is the Swarm Protocol revenue sharing mechanis
         %
         Freezing penalties last for about 1 day.
       \item 
-        They have shares in excess of a minimum threshold $\tau$. For the versions under consideration in this study, $\tau=10$ xBZZ.
+        They have shares in excess of a minimum threshold $\tau$. For the versions under consideration in this study, $\tau=10$ xBZZ worth of shares.
     \end{enumerate}
 
   \item
@@ -224,7 +226,7 @@ The topic of study of this report is the Swarm Protocol revenue sharing mechanis
     The details of this computation are largely out of scope for our model.
   
   \item 
-    NOs may increase their equity balance by calling the \code{stakeUpdate()} function of the Stake Registry, paying for equity in xBZZ tokens.
+    NOs may increase their equity balance by calling the \code{stakeUpdate()} function of the Stake Registry, paying xBZZ tokens in exchange for an equal number of shares.
     %
     In the Book of Swarm and related literature, this operation is called \emph{creating} or \emph{topping up stake} \cite[\S3.4.3]{book-of-swarm}.
     
@@ -283,7 +285,7 @@ More productive NOs therefore do not necessarily exert competitive pressure on i
 
 To formulate this result, we associate to a would-be NO $a$ a measure $c\in(0,1)$ of \emph{cost per unit (network) revenue} (C/R), that is, the ratio of $a$'s operating cost to the redistributed revenue for the whole network.
 %
-We find that as long as C/R are bounded below uniformaly across all NOs, it's possible for a first mover to monopolise and block entry to a neighbourhood.
+We find that as long as C/R are bounded below uniformaly across all NOs, it's possible for a first mover to monopolise and block entry to a neighbourhood.\footnote{We prove the quoted result under assumptions of constant revenue and cost streams, but the argument can be adapted with minimal changes to i.i.d.~lottery style payouts such as those actually implemented in the Swarm Protocol.}
 
 \begin{theorem}[Entry blocking]
   \label{thm:block-entry}
@@ -418,8 +420,6 @@ See \S\ref{section:ruin}.
 
 
 
-
-\newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Objectives of the system design}
@@ -810,23 +810,25 @@ Suppose NO $a$ may sell an arbitrary amount $k\in[0,w_a]$ of his revenue share t
 \]
 Note that share amounts are normalised here so that $\sum_{a\in\Overlay}w_a=1$.
 
-We consider shares as valued in terms of their instantaneous cash flows.
+We consider shares as valued in terms of their claim on future revenue, assuming no further reallocations take place after the trade in question.
 %
-In reality, their valuation may be higher as a capital base to pursue further expansion.
+That is, we assume that no sale other than the target under consideration is being or will ever be advertised, and moreover, no new shares will be minted or redeemed.
 %
-Our calculation is in line with the assumption that no sale other than the target under consideration is being advertised; therefore, neither $a$ nor $b$ takes into account any other opportunity to acquire shares.
+Therefore, neither $a$ nor $b$ takes into account any other opportunity to acquire shares.
+%
+For notation, see \S\ref{section:model}.
 
 \begin{proposition}
 
   Let $a,b\in\Overlay$ be NOs following a rational liveness policy (see Definition \ref{def:rational-liveness}).
   %
-  A sale from $a$ to $b$ of $k$ shares at price $P$ is feasible if $k\leq w_a$, $(w_b+k)R\geq O_b$, and
+  A sale from $a$ to $b$ of $k$ shares at price $P$ is feasible if $k\leq w_a$, $(w_b+k)TR\geq TO_b$, and
   %
   \[
-    P\in [\min\{kR,w_aR-O_a\}_+, kR + (w_bR-O_b)_+].
+    P\in [\min\{kTR,w_aTR-TO_a\}_+, kR + (w_bTR-TO_b)_+].
   \]  
   %
-  If $w_aR-O_a < kR$, $a$ becomes inactive after the trade; otherwise he remains active.
+  If $w_aTR-TO_a < kTR$, $a$ becomes inactive after the trade; otherwise he remains active.
   
 \end{proposition}
 %
@@ -835,18 +837,18 @@ Our calculation is in line with the assumption that no sale other than the targe
   \emph{Sell side}. It's rational for $a$ to accept the trade if
   %
   \[
-      w_a R - O_a \leq P + \max\{ (w_a-k) R - O_a, 0\},
+      w_a TR - TO_a \leq P + \max\{ (w_a-k) TR - TO_a, 0\},
   \]
   %
-  where following rational liveness, $a$ shuts down his node and receives a payoff of $0$ if $(w_a-k)R-O_i < 0$.
+  where following rational liveness, $a$ shuts down his node and receives a payoff of $0$ if $(w_a-k)TR-TO_i < 0$.
   %
-  (Note also that if $w_aR-O_a<0$, $a$'s node is inactive for the start and his shares do not immediately generate any revenue.)
+  (Note also that if $w_aTR-TO_a<0$, $a$'s node is inactive for the start and his shares do not immediately generate any revenue.)
   %
   Rearranging gives the lower bound for $P$.
 
-  \emph{Buy side}. If $b$ is active to begin with (i.e.~$w_bR>O_b$), acquiring the shares increases his profit by $kR$.
+  \emph{Buy side}. If $b$ is active to begin with (i.e.~$w_bTR>TO_b$), acquiring the shares increases his profit by $kTR$.
   %
-  Otherwise, acquiring the shares and starting the service brings in a profit of $(w_b+k)R-O_b$, if the latter is positive. \qedhere
+  Otherwise, acquiring the shares and starting the service brings in a profit of $(w_b+k)TR-TO_b$, if the latter is positive. \qedhere
 
 \end{proof}
 
@@ -854,9 +856,9 @@ Our calculation is in line with the assumption that no sale other than the targe
 
   Sale is feasible in the following cases:
   \begin{enumerate}
-    \item Both nodes are active pre-trade, $a$ remains active post-trade, $kR\leq w_aR-O_a$, and $P=kR$.
-    \item Both nodes are active pre-trade, $a$ shuts down post-trade, $kR\geq w_aR-O_a$, $P\in[w_aR-O_a,kR]$.
-    \item $b$ is inactive pre-trade, $a$ shuts down post-trade, and \[ R(w_a-w_b-k) \leq O_a-O_b \]
+    \item Both nodes are active pre-trade, $a$ remains active post-trade, $kTR\leq w_aTR-TO_a$, and $P=kTR$.
+    \item Both nodes are active pre-trade, $a$ shuts down post-trade, $kTR\geq w_aTR-TO_a$, $P\in[w_aTR-TO_a,kTR]$.
+    \item $b$ is inactive pre-trade, $a$ shuts down post-trade, and \[ TR(w_a-w_b-k) \leq TO_a-TO_b \]
   \end{enumerate}
   %
   There is no trade where $b$ is inactive before the sale and $a$ remains active after the sale.
@@ -869,9 +871,9 @@ In the cases where $a$ shuts down post-trade, it is reasonable to assume that $a
 
   Let $a\in\Overlay$ be active and $b\in\Overlay$ inactive.
   %
-  If $O_a>O_b$, there is a feasible trade where $a$ sells all of his shares to $b$ and shuts down.
+  If $TO_a>TO_b$, there is a feasible trade where $a$ sells all of his shares to $b$ and shuts down.
   %
-  The unit price of this trade lies in the interval $[R-O_a/w_a,R-O_b/w_a]$.
+  The unit price of this trade lies in the interval $[TR-TO_a/w_a,TR-TO_b/w_a]$.
 
 \end{corollary}
 
@@ -891,7 +893,7 @@ Under such conditions, we can therefore expect a trend towards consolidation and
   %
   Otherwise, there is an inactive node $b\in\Overlay$.
   %
-  If there exists an active node $a\in\Overlay$ with $O_a>O_b$, by Corollary \ref{thm:lower-cost-transfer} there is a feasible trade in which $a$ sells all his shares to $b$ and becomes inactive, while $b$ becomes active.
+  If there exists an active node $a\in\Overlay$ with $TO_a>TO_b$, by Corollary \ref{thm:lower-cost-transfer} there is a feasible trade in which $a$ sells all his shares to $b$ and becomes inactive, while $b$ becomes active.
   %
   By induction on the number of inactive nodes, after finitely many steps there is no inactive node having lower operating cost than any active node; this is the efficient production vector of Proposition \ref{thm:optimal-production-vector}. \qedhere
 
@@ -899,13 +901,13 @@ Under such conditions, we can therefore expect a trend towards consolidation and
 
 \begin{remark}[Effect of trades on environment]
 
-  This argument assumed that the forecast returns $R$ do not depend on whether or not the trade occurs. 
+  This argument assumed that the forecast returns $TR$ do not depend on whether or not the trade occurs. 
   %
   But a buyout of an active node by another active node could cause the observed replication rate to go down, causing the quoted storage price to go up. 
   %
-  Under this condition, a sophisticated NO would revise their forecast for $R$ --- broadly speaking, the effect should be to drive revenue up in the short term (particularly for existing storage quotas, which cannot be cancelled), but to drive demand down in the medium term.
+  Under this condition, a sophisticated NO would revise their forecast for $TR$ --- broadly speaking, the effect should be to drive revenue up in the short term (particularly for existing storage quotas, which cannot be cancelled), but to drive demand down in the medium term.
   
-  (Of course, the buyer could also assign the stake to a new address that runs on deduplicated storage, preventing a reaction by the price oracle.)
+  Of course, the buyer could also assign the stake to a new address that runs on deduplicated storage, preventing a reaction by the price oracle.
 
 \end{remark}
 
@@ -1695,18 +1697,21 @@ We then reintroduce operating costs under a simplified, deterministic model and 
 \subsubsection{Equity saturation}
 \label{section:saturation}
 
-When does an NO prefer to do something to nothing?
-%
 In Proposition \ref{thm:1-optimal-policy} we found that, under deterministic revenue and cost and passive opposition assumptions, no agent will mint any new shares once the number of outstanding shares exceeds the total future revenue, that is,
 \[
   \ssum\xi \geq TR_\bullet.
 \]
 %
+This matches the intuition that, assuming independence of the actions of other agents, shares cannot be worth more than the fraction of total future revenue to which they represent a claim.
+%
 In this case, say that the equity is \emph{saturated}.
 
-Once the share count becomes saturated, no new actions will ever be taken unless either
+Once the share count becomes saturated, no new actions will ever be taken unless either:
 \begin{enumerate}
-  \item $TR_\bullet$ increases due to a revised, more optimistic outlook on revenue.
+  \item 
+    $TR_\bullet$ increases due to a revised, more optimistic outlook on revenue.
+    %
+    For example, if we assume $R_\bullet$ is a martingale then this happens whenever $R_{t+1}>R_t$.
   \item The total share count decreases. 
   
     Under current Swarm protocol rules, this can happen for the following reasons:
@@ -1714,7 +1719,7 @@ Once the share count becomes saturated, no new actions will ever be taken unless
     \item A node becomes inactive;
     \item A node migrates their stake to another bin (under SWIP-19);
   \end{enumerate}
-  \item The share price $p_S$ comes down (under SWIP-20).
+  \item The share price $p_S$ comes down (under SWIP-20). (In the case of a floating share price $p_S$, the saturation bound is $p_S\ssum\xi\geq TR_\bullet$.)
 \end{enumerate}
 
 We should now ask the question, will a bin ever reach the saturation point?
@@ -1895,23 +1900,23 @@ We say that $a$ has been \emph{squeezed out} by $b$, because $b$ undercut $a$ (b
   An adversary that mints $x$ additional shares unilaterally squeezes out $a$ if and only if
   %
   \[
-    x > \frac { \xi_a(R-O_a) } {O_a} - \xi_{-a}.
+    x > \frac { \xi_a(R-O_a) } {O_a} - \ssum_{\hat{a}}\xi.
   \]
 
 \end{lemma}
 %
 \begin{proof}
 
-  By rearrangement of the cash flow condition $\frac{\xi_{-a}+x}{\xi_a} > \frac{R-O_a}{O_a}$. \qedhere
+  By rearrangement of the cash flow condition $\frac{\ssum_{\hat{a}}\xi+x}{\xi_a} > \frac{R-O_a}{O_a}$ (\S\ref{section:cash-flow}). \qedhere
 
 \end{proof}
 
 Note that investment over the threshold of Lemma \ref{thm:squeeze-threshold} is sufficient, but not necessary if other nodes may also mint new shares in the target epoch.
 %
-Indeed, we have $\tilde\xi_{-a,t} \geq \xi_{-a,t-1} + x$.
+Indeed, we have $\ssum_{\hat{a}}\tilde\xi_{t} \geq \ssum_{\hat{a}}\xi_{t-1} + x$.
 
 \paragraph{2 player case}
-Consider a pessimistic initial condition where $\xi_{-a}=0$.
+Consider a pessimistic initial condition where $\ssum_{\hat{a}}\xi=0$.
 %
 Then if
 \[
@@ -1957,7 +1962,7 @@ and any stake larger than $rRO_a/(R-O_a)$ will do.
 
 In \S\ref{section:optimal} we have studied the policy decisions of NOs without taking into account the possibility of bankruptcy.
 %
-Under the determinism assumptions we used for some of the calculations of \emph{loc.~cit}, downturns cannot occur as long as expected cash flows are positive; but this fails as soon as uncertainty is reintroduced.
+In the deterministic environment assumed for those calculations, downturns cannot occur as long as expected cash flows are positive; but this fails as soon as uncertainty is reintroduced.
 
 Generally speaking, smaller node operators are both more likely to go bankrupt and have fewer resources available to compute the risk of bankruptcy.
 %
