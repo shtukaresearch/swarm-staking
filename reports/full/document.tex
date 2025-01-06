@@ -214,10 +214,8 @@ For the benefit of the reader and to establish conventions for notation and term
 
     At time of writing, $D=11$.
 
-
-
   \item 
-    The redistributed revenue is calculated by multiplying the price, as reported by the Price Oracle contract, by the amount of storage consumed, as reported by the Postage contract, at each epoch.
+    The redistributed revenue is calculated by multiplying the price, as reported by the Price Oracle contract, by the total size of outstanding batches, as reported by the Postage contract, at each epoch.
     %
     The computation occurs during the winner selection part of the protocol, triggered by a successful call to \code{claim()}.
     %
@@ -480,7 +478,7 @@ If the Swarm Network were a shareholder firm, we might consider \emph{profit max
 %
 The Swarm Network isn't a firm, though, and doesn't have profits in the usual sense.
 %
-In the current model, all revenue is either redistributed to NOs or, in the case of quotas not fully consumed before expiry, simply locked and effectively removed from circulation.
+In the current model, all revenue is ultimately redistributed to NOs.
 
 We propose instead \emph{revenue} as a proxy for the profit maximisation objective because it is straightforward to measure in terms of on-chain flows in and out of the Postage contract.
 %
@@ -498,19 +496,9 @@ There are two ways to reckon revenue in the Swarm Protocol:
 
 \end{enumerate}
 %
-In the sequel, we focus on the Network revenue because of its simple relationship to realised demand and storage price.
-
-\begin{remark}[Burn rate]
-
-  It is not uncommon to consider \emph{burn rate} as an objective function in blockchain economies that issue their own token, as is the case for the Swarm Network.
-  %
-  In the Swarm Protocol today, burn rate is the difference between network revenue and redistributed revenue.
-  %
-  We don't regard it as an ideal objective for the Swarm storage service because under the current system, it would entail an objective of wasteful spending and non-usage of the service.
-  
-  Note that payments into the Stake Registry, though not withdrawable in the versions of the contract under analysis here, must not be considered as `burnt' because there exists a mechanism for these tokens to become withdrawable under a protocol upgrade (as in fact has happened under certain conditions downstream of SWIP-20,\footnote{\url{https://github.com/ethersphere/SWIPs/blob/master/SWIPs/swip-20.md}} introduced in the v0.9.1 upgrades).
-
-\end{remark}
+Though all network revenue is ultimately redistributed, this redistribution is not immediate and the delays vary depending on the balance with which quotas are originally purchased.
+%
+Thus, reckoned on a per epoch basis these two measures of revenue are different.
 
 \subsubsection{Quality of service}
 
@@ -2107,10 +2095,6 @@ The calculation is based on the number of outstanding postage stamp batches duri
 So, the figure is straightforward to measure, and indeed such measurements are among the figures published by the Swarm Foundation in its monthly State of the Network blog posts \cite{soft}.
 
 Uncertainty in this figure comes from the price oracle, which is updated once per round based on the number of reveals in that round (but \emph{after} the payout for that round), and new quotas that may be purchased at any time (on a per block basis) between the observation point and the reward payout event.
-
-For the purposes of modelling the revenue process, the signal may be decomposed as a product of quota sales, price, and batch utilisation rate.
-%
-Quota sales and price are directly observable and can be used to compute network revenue; meanwhile, batch utilisation rate may be deduced as the ratio of redistributed revenue to network revenue.
 
 If the unit of account is taken to be BZZ, then the price process, as it is controlled by the Price Oracle contract, can further be modelled as a function of apparent replication rate, which can be established by counting the number of \code{Reveal} events emitted from the Redistribution contract each round.
 %
